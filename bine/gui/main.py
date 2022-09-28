@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/gui/main.py
-#   Project:  Vine
+#      File:  /bine/gui/main.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
@@ -28,10 +28,10 @@ from typing import List
 
 from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
 
-from vine.gui.base.main import Ui_MainWindow
-from vine.model.article import Article
-from vine.model.document import Document
-from vine.settings import HeadingFormat, Settings
+from bine.gui.base.main import Ui_MainWindow
+from bine.model.checklist import Article
+from bine.model.document import Document
+from bine.settings import HeadingFormat, Settings
 
 
 
@@ -242,11 +242,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
 # ----------------------------------------------------------------------------------------------------------------------
     def about(self):
-        title = 'About Vine Markdown Editor'
-        description = importlib.metadata.metadata('vine')['Summary'] + '\n\n'
-        description += 'Author: ' + importlib.metadata.metadata('vine')['Author']
-        description += ' <' + importlib.metadata.metadata('vine')['Author-email'] + '>\n'
-        description += 'Copyright: (c) 2022 ' + importlib.metadata.metadata('vine')['Author']
+        title = 'About Bine Markdown Checklist Editor'
+        description = importlib.metadata.metadata('bine')['Summary'] + '\n\n'
+        description += 'Author: ' + importlib.metadata.metadata('bine')['Author']
+        description += ' <' + importlib.metadata.metadata('bine')['Author-email'] + '>\n'
+        description += 'Copyright: (c) 2022 ' + importlib.metadata.metadata('bine')['Author']
         QtWidgets.QMessageBox.about(self, title, description)
 
 
@@ -288,8 +288,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """The document has changed - Update the window title to reflect the current state."""
         dirty = '*' if self.model.dirty(self.settings) else ''
         filename = os.path.basename(self.filename) if self.filename else 'Untitled'
-        version = importlib.metadata.version('vine')
-        self.setWindowTitle(f'{dirty}{filename} - Vine Markdown Editor {version}')
+        version = importlib.metadata.version('bine')
+        self.setWindowTitle(f'{dirty}{filename} - Bine Markdown Checklist Editor {version}')
 
 
 # ----------------------------------------------------------------------------------------------------------------------

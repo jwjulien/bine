@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/model/__init__.py
-#   Project:  Vine
+#      File:  /bine/gui/__init__.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------

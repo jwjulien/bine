@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/gui/widgets/editor/editor.py
-#   Project:  Vine
+#      File:  /bine/gui/widgets/editor/editor.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
@@ -24,8 +24,8 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 import enchant
 
-from vine.gui.widgets.editor.highlighter import MarkdownSpellHighlighter
-from vine.gui.widgets.editor.action import SpellAction
+from bine.gui.widgets.editor.highlighter import MarkdownSpellHighlighter
+from bine.gui.widgets.editor.action import SpellAction
 
 
 

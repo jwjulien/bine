@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/settings.py
-#   Project:  Vine
+#      File:  /bine/__main__.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
@@ -17,31 +17,22 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
-"""Container for vine's settings."""
+"""Main entry point for the Bine project."""
 
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
-from dataclasses import dataclass
-from enum import Enum
+import sys
+
+from main import main
 
 
 
 # ======================================================================================================================
-# Headings Enum
+# Main Function
 # ----------------------------------------------------------------------------------------------------------------------
-class HeadingFormat(Enum):
-    HASHES = 'hashes'
-    BARS = 'bars'
-
-
-
-# ======================================================================================================================
-# Settings Class
-# ----------------------------------------------------------------------------------------------------------------------
-@dataclass
-class Settings:
-    headings: str
+if __name__ == "__main__":
+    sys.exit(main())
 
 
 

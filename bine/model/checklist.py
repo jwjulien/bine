@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/main.py
-#   Project:  Vine
+#      File:  /bine/model/checklist.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
@@ -17,28 +17,59 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
-"""Main GUI application creation point."""
+"""A checklist contains items (with checkboxes) and optionally more lists."""
 
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
-import sys
-
-from PySide6 import QtWidgets
-
-from vine.gui.main import MainWindow
+from typing import List
 
 
 
 
 # ======================================================================================================================
-# Main Function
+# Checklist Class
 # ----------------------------------------------------------------------------------------------------------------------
-def main():
-    app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    return app.exec_()
+class Checklist:
+    """Represents an "item" in the document tree containing the title and body text information.
+
+    Attributes:
+        title: The title of this article to be used as a heading in the document section.
+        body: Markdown body text for this section of the document.
+    """
+    def __init__(self, title: str, body: str, parent: 'Article' = None):
+        self.title = title
+        self.body = body
+        self.parent: 'Article' = parent
+        self.children: List['Article'] = []
+
+    def clear(self) -> None:
+        self.children = []
+
+    def child(self, number: int) -> 'Article':
+        if number < 0 or number >= len(self.children):
+            return None
+        return self.children[number]
+
+    def last_child(self) -> 'Article':
+        return self.children[-1] if self.children else None
+
+    def child_count(self) -> int:
+        return len(self.children)
+
+    def sibling_number(self) -> int:
+        if self.parent:
+            return self.parent.children.index(self)
+        return 0
+
+    @property
+    def level(self) -> int:
+        if not self.parent:
+            return 0
+        return self.parent.level + 1
+
+    def __repr__(self) -> str:
+        return f'<Article at 0x{id(self):x} title="{self.title}">'
 
 
 

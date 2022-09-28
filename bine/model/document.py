@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/model/document.py
-#   Project:  Vine
+#      File:  /bine/model/document.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
@@ -17,18 +17,17 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
-"""A document represents the root node in the tree and contains a set of articles."""
+"""A document represents the root node in the tree and contains a title, description and tree of lists."""
 
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
 import re
 
-from PySide6 import QtCore
 from markdown import markdown
 
-from vine.model.article import Article
-from vine.settings import HeadingFormat, Settings
+from bine.model.checklist import Article
+from bine.settings import HeadingFormat, Settings
 
 
 
@@ -40,6 +39,8 @@ class Document:
 
     def __init__(self):
         super().__init__()
+        self.title: str = ""
+        self.description: str = ""
         self.root: Article = Article('root', '')
         self._cached = ''
 

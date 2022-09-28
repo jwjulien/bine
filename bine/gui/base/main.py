@@ -16,12 +16,12 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QAbstractItemView, QApplication, QHBoxLayout, QHeaderView,
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QHeaderView, QLineEdit,
     QMainWindow, QMenu, QMenuBar, QSizePolicy,
-    QSplitter, QStatusBar, QTreeWidget, QTreeWidgetItem,
-    QWidget)
+    QSplitter, QStackedWidget, QStatusBar, QTreeWidget,
+    QTreeWidgetItem, QVBoxLayout, QWidget)
 
-from vine.gui.widgets.editor import MarkdownSpellTextEdit
+from bine.gui.widgets.editor import MarkdownSpellTextEdit
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -69,11 +69,14 @@ class Ui_MainWindow(object):
         self.actionHeadingsBars = QAction(MainWindow)
         self.actionHeadingsBars.setObjectName(u"actionHeadingsBars")
         self.actionHeadingsBars.setCheckable(True)
-        self.centralwidget = QWidget(MainWindow)
-        self.centralwidget.setObjectName(u"centralwidget")
-        self.horizontalLayout = QHBoxLayout(self.centralwidget)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.splitter = QSplitter(self.centralwidget)
+        self.action_tristate = QAction(MainWindow)
+        self.action_tristate.setObjectName(u"action_tristate")
+        self.action_tristate.setCheckable(True)
+        self.main = QWidget(MainWindow)
+        self.main.setObjectName(u"main")
+        self.verticalLayout_2 = QVBoxLayout(self.main)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.splitter = QSplitter(self.main)
         self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Horizontal)
         self.tree = QTreeWidget(self.splitter)
@@ -82,7 +85,7 @@ class Ui_MainWindow(object):
         self.tree.setHeaderItem(__qtreewidgetitem)
         self.tree.setObjectName(u"tree")
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(2)
+        sizePolicy.setHorizontalStretch(3)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.tree.sizePolicy().hasHeightForWidth())
         self.tree.setSizePolicy(sizePolicy)
@@ -93,23 +96,49 @@ class Ui_MainWindow(object):
         self.tree.setIndentation(15)
         self.tree.setHeaderHidden(True)
         self.splitter.addWidget(self.tree)
-        self.editor = MarkdownSpellTextEdit(self.splitter)
-        self.editor.setObjectName(u"editor")
-        self.editor.setEnabled(False)
+        self.stacker = QStackedWidget(self.splitter)
+        self.stacker.setObjectName(u"stacker")
         sizePolicy1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy1.setHorizontalStretch(5)
         sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.editor.sizePolicy().hasHeightForWidth())
-        self.editor.setSizePolicy(sizePolicy1)
+        sizePolicy1.setHeightForWidth(self.stacker.sizePolicy().hasHeightForWidth())
+        self.stacker.setSizePolicy(sizePolicy1)
+        self.top = QWidget()
+        self.top.setObjectName(u"top")
+        self.verticalLayout = QVBoxLayout(self.top)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.title = QLineEdit(self.top)
+        self.title.setObjectName(u"title")
+
+        self.verticalLayout.addWidget(self.title)
+
+        self.description = MarkdownSpellTextEdit(self.top)
+        self.description.setObjectName(u"description")
+        sizePolicy2 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(1)
+        sizePolicy2.setHeightForWidth(self.description.sizePolicy().hasHeightForWidth())
+        self.description.setSizePolicy(sizePolicy2)
         font = QFont()
         font.setFamilies([u"Consolas"])
         font.setPointSize(10)
-        self.editor.setFont(font)
-        self.splitter.addWidget(self.editor)
+        self.description.setFont(font)
 
-        self.horizontalLayout.addWidget(self.splitter)
+        self.verticalLayout.addWidget(self.description)
 
-        MainWindow.setCentralWidget(self.centralwidget)
+        self.stacker.addWidget(self.top)
+        self.checklist = QWidget()
+        self.checklist.setObjectName(u"checklist")
+        sizePolicy1.setHeightForWidth(self.checklist.sizePolicy().hasHeightForWidth())
+        self.checklist.setSizePolicy(sizePolicy1)
+        self.verticalLayout_3 = QVBoxLayout(self.checklist)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.stacker.addWidget(self.checklist)
+        self.splitter.addWidget(self.stacker)
+
+        self.verticalLayout_2.addWidget(self.splitter)
+
+        MainWindow.setCentralWidget(self.main)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
         self.menubar.setGeometry(QRect(0, 0, 798, 22))
@@ -125,8 +154,6 @@ class Ui_MainWindow(object):
         self.menuHTML.setObjectName(u"menuHTML")
         self.menuSettings = QMenu(self.menubar)
         self.menuSettings.setObjectName(u"menuSettings")
-        self.menuHeading_Format = QMenu(self.menuSettings)
-        self.menuHeading_Format.setObjectName(u"menuHeading_Format")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -158,11 +185,12 @@ class Ui_MainWindow(object):
         self.menuExport.addAction(self.menuHTML.menuAction())
         self.menuHTML.addAction(self.actionExportHtmlWhite)
         self.menuHTML.addAction(self.actionExportHtmlSlate)
-        self.menuSettings.addAction(self.menuHeading_Format.menuAction())
-        self.menuHeading_Format.addAction(self.actionHeadingsHashes)
-        self.menuHeading_Format.addAction(self.actionHeadingsBars)
+        self.menuSettings.addAction(self.action_tristate)
 
         self.retranslateUi(MainWindow)
+
+        self.stacker.setCurrentIndex(0)
+
 
         QMetaObject.connectSlotsByName(MainWindow)
     # setupUi
@@ -215,12 +243,12 @@ class Ui_MainWindow(object):
         self.actionExportHtmlWhite.setText(QCoreApplication.translate("MainWindow", u"White", None))
         self.actionHeadingsHashes.setText(QCoreApplication.translate("MainWindow", u"Hashes", None))
         self.actionHeadingsBars.setText(QCoreApplication.translate("MainWindow", u"Bars", None))
+        self.action_tristate.setText(QCoreApplication.translate("MainWindow", u"Tristate Checkboxes", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"Help", None))
         self.menuEdit.setTitle(QCoreApplication.translate("MainWindow", u"Edit", None))
         self.menuExport.setTitle(QCoreApplication.translate("MainWindow", u"Export", None))
         self.menuHTML.setTitle(QCoreApplication.translate("MainWindow", u"HTML", None))
         self.menuSettings.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
-        self.menuHeading_Format.setTitle(QCoreApplication.translate("MainWindow", u"Heading Format", None))
     # retranslateUi
 

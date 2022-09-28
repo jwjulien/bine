@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/gui/widgets/editor/action.py
-#   Project:  Vine
+#      File:  /bine/gui/widgets/editor/__init__.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
@@ -17,28 +17,17 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
-"""An action to connect a QTextEdit to the enchant spell checker whenever text is changed."""
+"""Widget that allows text editing with spell check and markdown syntax highlighting."""
 
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
-from PySide6 import QtCore, QtGui
+from bine.gui.widgets.editor.editor import MarkdownSpellTextEdit
 
 
-
-# ======================================================================================================================
-# Spell Correction Action Class
-# ----------------------------------------------------------------------------------------------------------------------
-class SpellAction(QtGui.QAction):
-    """A special QAction that returns the text as a signal.
-    
-    This action allows a connection to the spell checker so that the text can be evaluated as it is entered.
-    """
-    correct = QtCore.Signal(str)
-
-    def __init__(self, word, parent, label=None):
-        QtGui.QAction.__init__(self, label or word, parent)
-        self.triggered.connect(lambda x: self.correct.emit(word))
+__all__ = [
+    'MarkdownSpellTextEdit'
+]
 
 
 

@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/gui/widgets/editor/__init__.py
-#   Project:  Vine
+#      File:  /bine/__init__.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
@@ -17,17 +17,6 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
-"""Widget that allows text editing with spell check and markdown syntax highlighting."""
-
-# ======================================================================================================================
-# Imports
-# ----------------------------------------------------------------------------------------------------------------------
-from vine.gui.widgets.editor.editor import MarkdownSpellTextEdit
-
-
-__all__ = [
-    'MarkdownSpellTextEdit'
-]
 
 
 

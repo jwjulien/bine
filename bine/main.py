@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/gui/widgets/__init__.py
-#   Project:  Vine
+#      File:  /bine/main.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
@@ -17,6 +17,28 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
+"""Main GUI application creation point."""
+
+# ======================================================================================================================
+# Imports
+# ----------------------------------------------------------------------------------------------------------------------
+import sys
+
+from PySide6 import QtWidgets
+
+from bine.gui.main import MainWindow
+
+
+
+
+# ======================================================================================================================
+# Main Function
+# ----------------------------------------------------------------------------------------------------------------------
+def main():
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    return app.exec_()
 
 
 

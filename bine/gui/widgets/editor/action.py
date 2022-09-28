@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/__main__.py
-#   Project:  Vine
+#      File:  /bine/gui/widgets/editor/action.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
@@ -17,22 +17,28 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
-"""Main entry point for the Vine project."""
+"""An action to connect a QTextEdit to the enchant spell checker whenever text is changed."""
 
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
-import sys
-
-from main import main
+from PySide6 import QtCore, QtGui
 
 
 
 # ======================================================================================================================
-# Main Function
+# Spell Correction Action Class
 # ----------------------------------------------------------------------------------------------------------------------
-if __name__ == "__main__":
-    sys.exit(main())
+class SpellAction(QtGui.QAction):
+    """A special QAction that returns the text as a signal.
+
+    This action allows a connection to the spell checker so that the text can be evaluated as it is entered.
+    """
+    correct = QtCore.Signal(str)
+
+    def __init__(self, word, parent, label=None):
+        QtGui.QAction.__init__(self, label or word, parent)
+        self.triggered.connect(lambda x: self.correct.emit(word))
 
 
 

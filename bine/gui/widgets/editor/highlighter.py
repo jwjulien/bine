@@ -1,6 +1,6 @@
 # ======================================================================================================================
-#      File:  /vine/gui/widgets/editor/highlighter.py
-#   Project:  Vine
+#      File:  /bine/gui/widgets/editor/highlighter.py
+#   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
