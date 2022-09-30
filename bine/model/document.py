@@ -26,8 +26,8 @@ import re
 
 from markdown import markdown
 
-from bine.model.checklist import Article
-from bine.settings import HeadingFormat, Settings
+from bine.model.checklist import Checklist
+from bine.settings import Settings
 
 
 
@@ -41,7 +41,7 @@ class Document:
         super().__init__()
         self.title: str = ""
         self.description: str = ""
-        self.root: Article = Article('root', '')
+        self.root: Checklist = Checklist('root', '')
         self._cached = ''
 
 
@@ -96,7 +96,7 @@ class Document:
 # ----------------------------------------------------------------------------------------------------------------------
     def dumps(self, settings: Settings) -> str:
         """Return the contents of this document as a sting."""
-        def dump_node(root: Article) -> str:
+        def dump_node(root: Checklist) -> str:
             text = ''
 
             for article in root.children:
@@ -104,19 +104,8 @@ class Document:
                 text += max(2, 7 - article.level) * '\n'
 
                 # Generate a heading based upon the specified heading format.
-                if settings.headings == HeadingFormat.HASHES or article.level > 2:
-                    text += ('#' * article.level) + ' '
                 text += article.title.strip()
-                if settings.headings == HeadingFormat.BARS:
-                    if article.level == 1:
-                        text += '\n' + ('=' * 120)
-                    elif article.level == 2:
-                        text += '\n' + ('-' * 120)
-                    elif article.level == 3:
-                        text += ' ' + ('#' * (120 - len(article.title.strip()) - article.level - 2))
-                    elif article.level == 4:
-                        text += ' ' + ('#' * 4)
-                text += '\n'
+                text += '\n' + ('=' * 120) + '\n'
 
                 # Append the body text.
                 text += article.body.rstrip('\n')
@@ -154,9 +143,9 @@ class Document:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _repr_recursion(self, item: Article, indent: int = 0) -> str:
-        result = " " * indent + repr(item) + "\n"
-        for child in item.children:
+    def _repr_recursion(self, checklist: Checklist, indent: int = 0) -> str:
+        result = " " * indent + repr(checklist) + "\n"
+        for child in checklist.children:
             result += self._repr_recursion(child, indent + 2)
         return result
 

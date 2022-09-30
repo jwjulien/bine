@@ -29,9 +29,9 @@ from typing import List
 from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
 
 from bine.gui.base.main import Ui_MainWindow
-from bine.model.checklist import Article
+from bine.model.checklist import Checklist
 from bine.model.document import Document
-from bine.settings import HeadingFormat, Settings
+from bine.settings import Settings
 
 
 
@@ -48,13 +48,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         self.filename = None
-        self.article = None
 
         self.model = Document()
         self.ui.tree.selectionModel().selectionChanged.connect(self.selected)
 
         # TODO: Persist these settings to a user's config file.
-        self.settings = Settings(headings=HeadingFormat.BARS)
+        self.settings = Settings(tristate=True)
         self.show_settings()
 
         self.ui.popmenu = QtWidgets.QMenu(self)
@@ -72,8 +71,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionSave_As.triggered.connect(self.save_as)
         self.ui.actionSave_a_Copy.triggered.connect(self.save_copy)
         self.ui.actionExit.triggered.connect(self.close)
-        self.ui.actionHeadingsHashes.triggered.connect(lambda: self.headings(HeadingFormat.HASHES))
-        self.ui.actionHeadingsBars.triggered.connect(lambda: self.headings(HeadingFormat.BARS))
+        self.ui.action_tristate.triggered.connect(self.tristate)
         self.ui.actionInsert.triggered.connect(self.insert)
         self.ui.actionDelete.triggered.connect(self.delete)
         self.ui.actionAbout.triggered.connect(self.about)
@@ -81,12 +79,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionPreview.triggered.connect(self.preview)
         self.ui.actionExportHtmlWhite.triggered.connect(lambda: self.export_html('white'))
         self.ui.actionExportHtmlSlate.triggered.connect(lambda: self.export_html('slate'))
-        self.ui.editor.textChanged.connect(self.body_changed)
+        self.ui.description.textChanged.connect(self.description_changed)
         self.ui.tree.dropEvent = self.dropped
         self.ui.tree.itemChanged.connect(self.title_changed)
         self.ui.popmenu_insert.triggered.connect(self.insert)
         self.ui.popmenu_delete.triggered.connect(self.delete)
         self.changed()
+
+        root = QtWidgets.QTreeWidgetItem(self.ui.tree)
+        root.setText(0, "Root")
+        root.setFlags(root.flags() | QtCore.Qt.ItemIsAutoTristate | QtCore.Qt.ItemIsUserCheckable)
+        for _ in range(3):
+            child = QtWidgets.QTreeWidgetItem(root)
+            child.setFlags(child.flags() | QtCore.Qt.ItemIsUserCheckable)
+            child.setText(0, "Child")
+            child.setCheckState(0, QtCore.Qt.Unchecked)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -158,10 +165,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _make_item(self, article: Article) -> QtWidgets.QTreeWidgetItem:
+    def _make_item(self, checklist: Checklist) -> QtWidgets.QTreeWidgetItem:
         item = QtWidgets.QTreeWidgetItem()
-        item.setText(0, article.title)
-        item.setData(0, QtCore.Qt.UserRole, article)
+        item.setText(0, checklist.title)
+        item.setData(0, QtCore.Qt.UserRole, checklist)
         flags = item.flags()
         flags |= QtCore.Qt.ItemIsEditable
         item.setFlags(flags)
@@ -264,22 +271,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.popmenu_insert.setEnabled(self.article.level < 6)
         self.ui.actionInsert.setEnabled(self.article.level < 6)
         self.ui.editor.blockSignals(True)
-        self.ui.editor.setPlainText(self.article.body)
+        self.ui.editor.setPlainText(self.model.description)
         self.ui.editor.blockSignals(False)
         self.ui.editor.setEnabled(True)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def title_changed(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        article = item.data(0, QtCore.Qt.UserRole)
-        article.title = item.text(0)
+        self.model.title = item.text(0)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def body_changed(self) -> None:
+    def description_changed(self) -> None:
         """The user has modified the text in the editor window."""
-        if self.article:
-            self.article.body = self.ui.editor.toPlainText()
+        self.model.description = self.ui.description.toPlainText()
         self.changed()
 
 
@@ -384,13 +389,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
 # ----------------------------------------------------------------------------------------------------------------------
     def show_settings(self) -> None:
-        self.ui.actionHeadingsHashes.setChecked(self.settings.headings == HeadingFormat.HASHES)
-        self.ui.actionHeadingsBars.setChecked(self.settings.headings == HeadingFormat.BARS)
+        self.ui.action_tristate.setChecked(self.settings.tristate)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def headings(self, format: HeadingFormat) -> None:
-        self.settings.headings = HeadingFormat(format)
+    def tristate(self) -> None:
+        self.settings.tristate = not self.settings.tristate
         self.show_settings()
 
 
