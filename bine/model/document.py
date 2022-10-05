@@ -26,7 +26,7 @@ import re
 
 from markdown import markdown
 
-from bine.model.checklist import Checklist
+from bine.model.item import Item
 from bine.settings import Settings
 
 
@@ -41,7 +41,7 @@ class Document:
         super().__init__()
         self.title: str = ""
         self.description: str = ""
-        self.root: Checklist = Checklist('root', '')
+        self.root: Item = Item()
         self._cached = ''
 
 
@@ -61,12 +61,20 @@ class Document:
         document += '\n'
 
         # Parse out sections using headings as titles.
-        previous_level = 0
-        parents = []
+        sections = re.split('^#+\s*', document, flags=re.MULTILINE)[1:]
+        if len(sections) != 1:
+            raise ValueError('Provided file does not follow expected checklist conventions.')
+        self.title, body = sections[0].split('\n', 1)
+        self.description, item_text = body.split('\n\n-', 1)
+        item_text = '- ' + item_text.strip() + '\n'
+
+        # Generate nested lists of Items from the list under the description.
+        previous_level = -1
         child = self.root
-        sections = re.split('(^#+)', document, flags=re.MULTILINE)[1:]
-        for heading, content in zip(sections[::2], sections[1::2]):
-            level = len(heading)
+        parents = []
+        items = re.split('^(\s*)-\s+\[(.)\]\s+(.+)\n', item_text, flags=re.MULTILINE)
+        for indent, check_text, text in zip(items[1::4], items[2::4], items[3::4]):
+            level = len(indent)
             while level > previous_level:
                 parents.append(child)
                 previous_level += 1
@@ -74,13 +82,13 @@ class Document:
                 parents.pop()
                 previous_level -= 1
             parent = parents[-1]
-            title, body = content.split('\n', 1)
-            child = Article(title=title.rstrip('#').strip(), body=body.strip(), parent=parent)
+            checked = check_text != ' '
+            child = Item(parent, checked, text)
             parent.children.append(child)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def dump(self, filename: str, settings: Settings) -> None:
+    def dump(self, filename: str, settings: Settings, update_cache: bool) -> None:
         """Write the contents of this model to the provided filename.
 
         Arguments:
@@ -90,32 +98,31 @@ class Document:
         document = self.dumps(settings)
         with open(filename, 'w', encoding='utf-8') as handle:
             handle.write(document)
-        self._cached = document
+        if update_cache:
+            self._cached = document
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def dumps(self, settings: Settings) -> str:
         """Return the contents of this document as a sting."""
-        def dump_node(root: Checklist) -> str:
+        def dump_node(node: Item) -> str:
             text = ''
 
-            for article in root.children:
-                # Prepend newlines BEFORE this section.
-                text += max(2, 7 - article.level) * '\n'
-
-                # Generate a heading based upon the specified heading format.
-                text += article.title.strip()
-                text += '\n' + ('=' * 120) + '\n'
-
-                # Append the body text.
-                text += article.body.rstrip('\n')
+            for item in node.children:
+                indent = ' ' * ((item.level - 1) * 4)
+                text += f"{indent}- [{'x' if item.checked else ' '}] {item.text}\n"
 
                 # Recurse into children, when applicable (returns nothing when this is a leaf node).
-                text += dump_node(article)
+                text += dump_node(item)
 
             return text
 
-        return dump_node(self.root).strip('\n')
+        text = self.title + '\n'
+        text += ('=' * 120) + '\n'
+        text += self.description
+        text += '\n\n'
+        text += dump_node(self.root)
+        return text
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -143,9 +150,9 @@ class Document:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _repr_recursion(self, checklist: Checklist, indent: int = 0) -> str:
-        result = " " * indent + repr(checklist) + "\n"
-        for child in checklist.children:
+    def _repr_recursion(self, item: Item, indent: int = 0) -> str:
+        result = " " * indent + repr(item) + "\n"
+        for child in item.children:
             result += self._repr_recursion(child, indent + 2)
         return result
 

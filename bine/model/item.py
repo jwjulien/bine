@@ -1,5 +1,5 @@
 # ======================================================================================================================
-#      File:  /bine/model/checklist.py
+#      File:  /bine/model/item.py
 #   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
@@ -17,7 +17,7 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
-"""A checklist contains items (with checkboxes) and optionally more lists."""
+"""A checklist contains Items (with checkboxes) and optionally more children Items."""
 
 # ======================================================================================================================
 # Imports
@@ -28,30 +28,42 @@ from typing import List
 
 
 # ======================================================================================================================
-# Checklist Class
+# List Item Class
 # ----------------------------------------------------------------------------------------------------------------------
-class Checklist:
-    """Represents an "item" in the document tree containing the title and body text information.
+class Item:
+    """Represents an "item" in the document tree containing checklist items with optional lists.
 
     Attributes:
-        title: The title of this article to be used as a heading in the document section.
-        body: Markdown body text for this section of the document.
+        parent: Parent Checklist of this Checklist or None in the case of root list.
+        checked: Boolean indicating if this item is checked.  Calculated for non-leaf nodes.
+        text: Text for this item in the checklist.
+        children: List of Items under this item - may be empty in the case of leaves.
     """
-    def __init__(self, title: str, body: str, parent: 'Article' = None):
-        self.title = title
-        self.body = body
-        self.parent: 'Article' = parent
-        self.children: List['Article'] = []
+    def __init__(self, parent: 'Item' = None, checked: bool = False, text: str = ''):
+        self.parent: 'Item' = parent
+        self._checked: bool = checked
+        self.text: str = text
+        self.children: List['Item'] = []
+
+    @property
+    def checked(self):
+        if not self.children:
+            return self._checked
+        return all([child.checked for child in self.children])
+
+    @checked.setter
+    def checked(self, value):
+        self._checked = value
 
     def clear(self) -> None:
         self.children = []
 
-    def child(self, number: int) -> 'Article':
+    def child(self, number: int) -> 'Item':
         if number < 0 or number >= len(self.children):
             return None
         return self.children[number]
 
-    def last_child(self) -> 'Article':
+    def last_child(self) -> 'Item':
         return self.children[-1] if self.children else None
 
     def child_count(self) -> int:
@@ -60,7 +72,7 @@ class Checklist:
     def sibling_number(self) -> int:
         if self.parent:
             return self.parent.children.index(self)
-        return 0
+        return None
 
     @property
     def level(self) -> int:
@@ -69,7 +81,7 @@ class Checklist:
         return self.parent.level + 1
 
     def __repr__(self) -> str:
-        return f'<Article at 0x{id(self):x} title="{self.title}">'
+        return f'<Item at 0x{id(self):x} checked={self.checked} text="{self.text}">'
 
 
 
