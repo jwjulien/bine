@@ -137,7 +137,8 @@ class Document:
         extensions = [
             'admonition',
             'codehilite',
-            'extra'
+            'extra',
+            'pymdownx.tasklist'
         ]
         html = markdown(text, extensions=extensions)
         return html

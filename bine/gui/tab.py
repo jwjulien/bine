@@ -23,7 +23,6 @@
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
 import os
-from re import L
 from typing import List
 
 from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
@@ -31,6 +30,7 @@ from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
 from bine.gui.base.tab import Ui_Tab
 from bine.model.item import Item
 from bine.model.document import Document
+from bine.libraries.undo.item import CommandItemEdit, CommandItemDelete
 
 
 
@@ -43,6 +43,8 @@ class TabWidget(QtWidgets.QWidget):
 
     contentChanged = QtCore.Signal()
     selectionChanged = QtCore.Signal(list)
+    undoTextChanged = QtCore.Signal(str)
+    redoTextChanged = QtCore.Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -52,6 +54,7 @@ class TabWidget(QtWidgets.QWidget):
         self.settings = parent.settings
         self.filename = None
         self.model = Document()
+        self.undo_stack = QtGui.QUndoStack(self)
 
         self.ui.popmenu = QtWidgets.QMenu(self)
         self.ui.popmenu_insert_sibling = QtGui.QAction('Insert Sibling', self)
@@ -72,6 +75,8 @@ class TabWidget(QtWidgets.QWidget):
         self.ui.tree.itemChanged.connect(self.item_changed)
         self.ui.title.textChanged.connect(self.title_changed)
         self.ui.description.textChanged.connect(self.description_changed)
+        self.undo_stack.undoTextChanged.connect(lambda text: self.undoTextChanged.emit(text))
+        self.undo_stack.redoTextChanged.connect(lambda text: self.redoTextChanged.emit(text))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -219,7 +224,10 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def title_changed(self, item: QtWidgets.QTreeWidgetItem) -> None:
+    def title_changed(self) -> None:
+        # previous = self.model.title
+        # updated =
+        # CommandItemEdit(self.ui.tree, )
         self.model.title = self.ui.title.text()
         self.contentChanged.emit()
 
@@ -235,10 +243,22 @@ class TabWidget(QtWidgets.QWidget):
     def item_changed(self, node: QtWidgets.QTreeWidgetItem, _column: int):
         """Fires when the user modifies the item in the tree."""
         item: Item = node.data(0, QtCore.Qt.UserRole)
+        description = f'change item text from "{item.text}" to "{node.text(0)}"'
+        command = CommandItemEdit(self.ui.tree, node, item, description)
+        self.undo_stack.push(command)
         item.text = node.text(0)
         item.checked = node.checkState(0)
         self.contentChanged.emit()
-        # self.ui.tree.sortByColumn(0, QtCore.Qt.SortOrder.DescendingOrder)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def undo(self):
+        self.undo_stack.undo()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def redo(self):
+        self.undo_stack.redo()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -353,13 +373,8 @@ class TabWidget(QtWidgets.QWidget):
         if not selection:
             return
         for node in selection:
-            item: Item = node.data(0, QtCore.Qt.UserRole)
-            item.parent.children.pop(item.sibling_number())
-            parent = node.parent()
-            if parent:
-                parent.removeChild(node)
-            else:
-                self.ui.tree.takeTopLevelItem(self.ui.tree.indexOfTopLevelItem(node))
+            command = CommandItemDelete(self.ui.tree, node)
+            self.undo_stack.push(command)
         self.ui.tree.clearSelection()
         self.contentChanged.emit()
 

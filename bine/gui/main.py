@@ -59,9 +59,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionSave.triggered.connect(lambda: self.ui.tabs.currentWidget().save())
         self.ui.actionSave_As.triggered.connect(lambda: self.ui.tabs.currentWidget().save_as())
         self.ui.actionSave_a_Copy.triggered.connect(lambda: self.ui.tabs.currentWidget().save_copy())
+        self.ui.actionPrint.triggered.connect(lambda: self.ui.tabs.currentWidget().on_print())
+        self.ui.actionPreview.triggered.connect(lambda: self.ui.tabs.currentWidget().preview())
         self.ui.actionCloseTab.triggered.connect(lambda: self.close_tab(self.ui.tabs.currentIndex()))
         self.ui.actionExit.triggered.connect(self.close)
-        self.ui.actionTristate.triggered.connect(self.tristate)
+        self.ui.actionUndo.triggered.connect(lambda: self.ui.tabs.currentWidget().undo())
+        self.ui.actionRedo.triggered.connect(lambda: self.ui.tabs.currentWidget().redo())
         self.ui.actionInsertSibling.triggered.connect(lambda: self.ui.tabs.currentWidget().insert_sibling())
         self.ui.actionInsertChild.triggered.connect(lambda: self.ui.tabs.currentWidget().insert_child())
         self.ui.actionDelete.triggered.connect(lambda: self.ui.tabs.currentWidget().delete())
@@ -71,11 +74,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionDedent.triggered.connect(lambda: self.ui.tabs.currentWidget().dedent())
         self.ui.actionExpandAll.triggered.connect(lambda: self.ui.tabs.currentWidget().expand_all())
         self.ui.actionCollapseAll.triggered.connect(lambda: self.ui.tabs.currentWidget().collapse_all())
-        self.ui.actionAbout.triggered.connect(self.about)
-        self.ui.actionPrint.triggered.connect(lambda: self.ui.tabs.currentWidget().on_print())
-        self.ui.actionPreview.triggered.connect(lambda: self.ui.tabs.currentWidget().preview())
+        self.ui.actionTristate.triggered.connect(self.tristate)
         self.ui.actionExportHtmlWhite.triggered.connect(lambda: self.ui.tabs.currentWidget().export_html('white'))
         self.ui.actionExportHtmlSlate.triggered.connect(lambda: self.ui.tabs.currentWidget().export_html('slate'))
+        self.ui.actionAbout.triggered.connect(self.about)
         self.ui.tabs.tabCloseRequested.connect(self.close_tab)
         self.ui.tabs.currentChanged.connect(self.tab_changed)
         self.tab_changed()
@@ -241,9 +243,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.actionIndent.setEnabled(all(to_item(node).sibling_number() != 0 for node in selection))
             self.ui.actionDedent.setEnabled(all(to_item(node).level > 1 for node in selection))
 
-
         tab.selectionChanged.connect(selection_changed)
         tab.contentChanged.connect(content_changed)
+        tab.undoTextChanged.connect(lambda text: self.ui.actionUndo.setStatusTip('Undo ' + text))
+        tab.redoTextChanged.connect(lambda text: self.ui.actionRedo.setStatusTip('Redo ' + text))
 
         return tab
 
