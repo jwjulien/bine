@@ -30,7 +30,7 @@ from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
 from bine.gui.base.tab import Ui_Tab
 from bine.model.item import Item
 from bine.model.document import Document
-from bine.libraries.undo.item import CommandItemEdit, CommandItemDelete
+from bine.libraries.undo.item import CommandItemEdit, CommandItemDelete, CommandItemInsert
 
 
 
@@ -55,6 +55,8 @@ class TabWidget(QtWidgets.QWidget):
         self.filename = None
         self.model = Document()
         self.undo_stack = QtGui.QUndoStack(self)
+
+        self._changed_from_insert = False
 
         self.ui.popmenu = QtWidgets.QMenu(self)
         self.ui.popmenu_insert_sibling = QtGui.QAction('Insert Sibling', self)
@@ -246,6 +248,9 @@ class TabWidget(QtWidgets.QWidget):
         description = f'change item text from "{item.text}" to "{node.text(0)}"'
         command = CommandItemEdit(self.ui.tree, node, item, description)
         self.undo_stack.push(command)
+        if self._changed_from_insert:
+            self.undo_stack.endMacro()
+            self._changed_from_insert = False
         item.text = node.text(0)
         item.checked = node.checkState(0)
         self.contentChanged.emit()
@@ -254,11 +259,13 @@ class TabWidget(QtWidgets.QWidget):
 # ----------------------------------------------------------------------------------------------------------------------
     def undo(self):
         self.undo_stack.undo()
+        self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def redo(self):
         self.undo_stack.redo()
+        self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -317,16 +324,11 @@ class TabWidget(QtWidgets.QWidget):
         selection = self.ui.tree.selectedItems()
         new_item = Item('', '')
         new_node = self._make_item(new_item)
-        if not selection or not selection[0].parent():
-            new_item.parent = self.model.root
-            self.model.root.children.append(new_item)
-            self.ui.tree.addTopLevelItem(new_node)
-        else:
-            selected_node = selection[-1]
-            selected_item: Item = selected_node.data(0, QtCore.Qt.UserRole)
-            new_item.parent = selected_item
-            selected_item.parent.children.append(new_item)
-            selected_node.parent().addChild(new_node)
+        selected = None if not selection or not selection[-1].parent() else selection[-1]
+        command = CommandItemInsert(self.ui.tree, new_node, selected, self.model.root, True)
+        self.undo_stack.beginMacro('insert new sibling')
+        self._changed_from_insert = True
+        self.undo_stack.push(command)
         self.ui.tree.editItem(new_node, column=0)
         self.ui.tree.setCurrentItem(new_node, 0)
         self.contentChanged.emit()
@@ -338,17 +340,11 @@ class TabWidget(QtWidgets.QWidget):
         selection = self.ui.tree.selectedItems()
         new_item = Item('', '')
         new_node = self._make_item(new_item)
-        if not selection:
-            new_item.parent = self.model.root
-            self.model.root.children.append(new_item)
-            self.ui.tree.addTopLevelItem(new_node)
-        else:
-            selected_node = selection[-1]
-            selected_item: Item = selected_node.data(0, QtCore.Qt.UserRole)
-            new_item.parent = selected_item
-            selected_item.children.append(new_item)
-            selected_node.addChild(new_node)
-            selected_node.setExpanded(True)
+        selected = None if not selection else selection[-1]
+        command = CommandItemInsert(self.ui.tree, new_node, selected, self.model.root, False)
+        self.undo_stack.beginMacro('insert new child')
+        self._changed_from_insert = True
+        self.undo_stack.push(command)
         self.ui.tree.editItem(new_node, column=0)
         self.ui.tree.setCurrentItem(new_node, 0)
         self.contentChanged.emit()
