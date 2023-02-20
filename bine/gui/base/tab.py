@@ -16,8 +16,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QHeaderView, QLineEdit,
-    QSizePolicy, QSplitter, QTreeWidget, QTreeWidgetItem,
-    QVBoxLayout, QWidget)
+    QSizePolicy, QSplitter, QTreeView, QVBoxLayout,
+    QWidget)
 
 from bine.gui.widgets.editor import MarkdownSpellTextEdit
 
@@ -48,10 +48,7 @@ class Ui_Tab(object):
         font.setPointSize(10)
         self.description.setFont(font)
         self.splitter.addWidget(self.description)
-        self.tree = QTreeWidget(self.splitter)
-        __qtreewidgetitem = QTreeWidgetItem()
-        __qtreewidgetitem.setText(0, u"1");
-        self.tree.setHeaderItem(__qtreewidgetitem)
+        self.tree = QTreeView(self.splitter)
         self.tree.setObjectName(u"tree")
         sizePolicy1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy1.setHorizontalStretch(3)
@@ -63,7 +60,6 @@ class Ui_Tab(object):
         self.tree.setDefaultDropAction(Qt.MoveAction)
         self.tree.setAlternatingRowColors(True)
         self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.tree.setIndentation(15)
         self.tree.setHeaderHidden(True)
         self.splitter.addWidget(self.tree)
 

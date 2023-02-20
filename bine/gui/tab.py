@@ -28,8 +28,8 @@ from typing import List
 from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
 
 from bine.gui.base.tab import Ui_Tab
-from bine.model.item import Item
-from bine.model.document import Document
+from bine.model.item import TreeItem
+from bine.model.tree import TreeModel
 from bine.libraries.undo.item import CommandItemEdit, CommandItemDelete, CommandItemInsert
 
 
@@ -53,7 +53,8 @@ class TabWidget(QtWidgets.QWidget):
 
         self.settings = parent.settings
         self.filename = None
-        self.model = Document()
+        self.model = TreeModel(self.ui.tree)
+        self.ui.tree.setModel(self.model)
         self.undo_stack = QtGui.QUndoStack(self)
 
         self._changed_from_insert = False
@@ -70,11 +71,11 @@ class TabWidget(QtWidgets.QWidget):
         self.ui.popmenu_insert_child.triggered.connect(self.insert_child)
         self.ui.popmenu_delete.triggered.connect(self.delete)
 
-        self.ui.tree.selectionModel().selectionChanged.connect(lambda: self.selectionChanged.emit(self.ui.tree.selectedItems()))
+        self.ui.tree.selectionModel().selectionChanged.connect(self.on_select)
         self.ui.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.tree.customContextMenuRequested.connect(self.context)
-        self.ui.tree.dropEvent = self.dropped
-        self.ui.tree.itemChanged.connect(self.item_changed)
+        # self.ui.tree.dropEvent = self.dropped
+        self.model.dataChanged.connect(lambda: self.contentChanged.emit())
         self.ui.title.textChanged.connect(self.title_changed)
         self.ui.description.textChanged.connect(self.description_changed)
         self.undo_stack.undoTextChanged.connect(lambda text: self.undoTextChanged.emit(text))
@@ -116,52 +117,14 @@ class TabWidget(QtWidgets.QWidget):
         """
         self.filename = filename
         self.model.load(self.filename)
+
         self.ui.title.setText(self.model.title)
         self.ui.description.setPlainText(self.model.description)
-        self._render_tree()
         self.ui.tree.setSelection(QtCore.QRect(0, 0, 1, 1), QtCore.QItemSelectionModel.ClearAndSelect)
         self.expand_all()
+
         self.contentChanged.emit()
 
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def _make_item(self, item: Item) -> QtWidgets.QTreeWidgetItem:
-        """Private method to generate a new `QTreeWidgetItem` for the tree.
-
-        Arguments:
-            item: An instance of an `Item` (i.e. section) possessing title information to add to the tree.
-
-        Returns:
-            An instance of `QTreeWidgetItem` initialized with the provided `Item` title and with the `item`
-            instance mapped into the `UserRole` for later use.
-        """
-        child = QtWidgets.QTreeWidgetItem()
-        child.setText(0, item.text)
-        child.setData(0, QtCore.Qt.UserRole, item)
-        flags = child.flags()
-        flags |= QtCore.Qt.ItemIsEditable
-        flags |= QtCore.Qt.ItemIsAutoTristate
-        flags |= QtCore.Qt.ItemIsUserCheckable
-        child.setFlags(flags)
-        if not item.children:
-            child.setCheckState(0, QtCore.Qt.Checked if item.checked else QtCore.Qt.Unchecked)
-        return child
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def _render_tree(self):
-        """Helper to re-render the item tree whenever the model changes."""
-        def add_node(item: Item) -> List[QtWidgets.QTreeWidgetItem]:
-            roots = []
-            for child in item.children:
-                item = self._make_item(child)
-                item.addChildren(add_node(child))
-                roots.append(item)
-            return roots
-
-        roots = add_node(self.model.root)
-        self.ui.tree.clear()
-        self.ui.tree.addTopLevelItems(roots)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -220,40 +183,36 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def selected(self, selection: List[QtWidgets.QListWidgetItem]) -> None:
-        """User has selected a new title in the tree - load the corresponding body into the editor."""
-        self.selectionChanged.emit(self.ui.tree.selectedItems())
+    def on_select(self) -> List[TreeItem]:
+        selections = self.ui.tree.selectedIndexes()
+        items = [self.model.getItem(index) for index in selections]
+        self.selectionChanged.emit(items)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def title_changed(self) -> None:
-        # previous = self.model.title
-        # updated =
-        # CommandItemEdit(self.ui.tree, )
         self.model.title = self.ui.title.text()
-        self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def description_changed(self) -> None:
         """The user has modified the text in the editor window."""
         self.model.description = self.ui.description.toPlainText()
-        self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def item_changed(self, node: QtWidgets.QTreeWidgetItem, _column: int):
-        """Fires when the user modifies the item in the tree."""
-        item: Item = node.data(0, QtCore.Qt.UserRole)
-        description = f'change item text from "{item.text}" to "{node.text(0)}"'
-        command = CommandItemEdit(self.ui.tree, node, item, description)
-        self.undo_stack.push(command)
-        if self._changed_from_insert:
-            self.undo_stack.endMacro()
-            self._changed_from_insert = False
-        item.text = node.text(0)
-        item.checked = node.checkState(0)
-        self.contentChanged.emit()
+    # def item_changed(self, node: QtWidgets.QTreeWidgetItem, _column: int):
+    #     """Fires when the user modifies the item in the tree."""
+        # item: TreeItem = node.data(0, QtCore.Qt.UserRole)
+        # description = f'change item text from "{item.text}" to "{node.text(0)}"'
+        # command = CommandItemEdit(self.ui.tree, node, item, description)
+        # self.undo_stack.push(command)
+        # if self._changed_from_insert:
+        #     self.undo_stack.endMacro()
+        #     self._changed_from_insert = False
+        # item.text = node.text(0)
+        # item.checked = node.checkState(0)
+        # self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -269,43 +228,43 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def dropped(self, event):
-        """Called when an article in the tree is "dropped" from a resort event.
+    # def dropped(self, event):
+    #     """Called when an article in the tree is "dropped" from a resort event.
 
-        Because the QTreeViewWidget does not automatically handle sorting updates for use we must hook this event and
-        extract the new tree structure from the UI upon a drop.
+    #     Because the QTreeViewWidget does not automatically handle sorting updates for use we must hook this event and
+    #     extract the new tree structure from the UI upon a drop.
 
-        Arguments:
-            event: The DropEvent object with info about what was dropped.
-        """
-        # Invoke the original parent function we are overriding.
-        QtWidgets.QTreeWidget.dropEvent(self.ui.tree, event)
+    #     Arguments:
+    #         event: The DropEvent object with info about what was dropped.
+    #     """
+    #     # Invoke the original parent function we are overriding.
+    #     QtWidgets.QTreeWidget.dropEvent(self.ui.tree, event)
 
-        def recurse(node: QtWidgets.QTreeWidgetItem, parent: Item = None) -> List[Item]:
-            items = []
-            count = node.childCount()
-            if count > 0:
-                for idx in range(count):
-                    child = node.child(idx)
-                    item: Item = child.data(0, QtCore.Qt.UserRole)
-                    item.parent = parent
-                    item.children = recurse(child, item)
-                    items.append(item)
-            else:
-                item = node.data(0, QtCore.Qt.UserRole)
-                node.setCheckState(0, QtCore.Qt.Checked if item.checked else QtCore.Qt.Unchecked)
-            return items
+    #     def recurse(node: QtWidgets.QTreeWidgetItem, parent: TreeItem = None) -> List[TreeItem]:
+    #         items = []
+    #         count = node.childCount()
+    #         if count > 0:
+    #             for idx in range(count):
+    #                 child = node.child(idx)
+    #                 item: TreeItem = child.data(0, QtCore.Qt.UserRole)
+    #                 item.parent = parent
+    #                 item.children = recurse(child, item)
+    #                 items.append(item)
+    #         else:
+    #             item = node.data(0, QtCore.Qt.UserRole)
+    #             node.setCheckState(0, QtCore.Qt.Checked if item.checked else QtCore.Qt.Unchecked)
+    #         return items
 
-        # Reload the document structure from the tree.
-        self.model.root.children = []
-        for idx in range(self.ui.tree.topLevelItemCount()):
-            node = self.ui.tree.topLevelItem(idx)
-            item = node.data(0, QtCore.Qt.UserRole)
-            item.parent = self.model.root
-            item.children = recurse(node, item)
-            self.model.root.children.append(item)
+    #     # Reload the document structure from the tree.
+    #     self.model.root.children = []
+    #     for idx in range(self.ui.tree.topLevelItemCount()):
+    #         node = self.ui.tree.topLevelItem(idx)
+    #         item = node.data(0, QtCore.Qt.UserRole)
+    #         item.parent = self.model.root
+    #         item.children = recurse(node, item)
+    #         self.model.root.children.append(item)
 
-        self.contentChanged.emit()
+    #     self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -322,7 +281,7 @@ class TabWidget(QtWidgets.QWidget):
     def insert_sibling(self):
         """Called to insert a new item into the tree at the selected location."""
         selection = self.ui.tree.selectedItems()
-        new_item = Item('', '')
+        new_item = TreeItem('', '')
         new_node = self._make_item(new_item)
         selected = None if not selection or not selection[-1].parent() else selection[-1]
         command = CommandItemInsert(self.ui.tree, new_node, selected, self.model.root, True)
@@ -338,7 +297,7 @@ class TabWidget(QtWidgets.QWidget):
     def insert_child(self):
         """Called to insert a new item into the tree under the selected location."""
         selection = self.ui.tree.selectedItems()
-        new_item = Item('', '')
+        new_item = TreeItem('', '')
         new_node = self._make_item(new_item)
         selected = None if not selection else selection[-1]
         command = CommandItemInsert(self.ui.tree, new_node, selected, self.model.root, False)
@@ -364,7 +323,7 @@ class TabWidget(QtWidgets.QWidget):
 
 # ----------------------------------------------------------------------------------------------------------------------
     def delete(self):
-        """Fires to delete the currently selected Item from the tree."""
+        """Fires to delete the currently selected TreeItem from the tree."""
         selection = self._selection()
         if not selection:
             return
@@ -382,8 +341,8 @@ class TabWidget(QtWidgets.QWidget):
         if not selection:
             return
         for node in selection:
-            item: Item = node.data(0, QtCore.Qt.UserRole)
-            index = item.sibling_number()
+            item: TreeItem = node.data(0, QtCore.Qt.UserRole)
+            index = item.childNumber()
             if index > 0:
                 item.parent.children.pop(index)
                 item.parent.children.insert(index - 1, item)
@@ -408,8 +367,8 @@ class TabWidget(QtWidgets.QWidget):
         if not selection:
             return
         for node in selection:
-            item: Item = node.data(0, QtCore.Qt.UserRole)
-            index = item.sibling_number()
+            item: TreeItem = node.data(0, QtCore.Qt.UserRole)
+            index = item.childNumber()
             if index < (len(item.parent.children) - 1):
                 item.parent.children.pop(index)
                 item.parent.children.insert(index + 1, item)
@@ -436,17 +395,17 @@ class TabWidget(QtWidgets.QWidget):
         top = selection[0]
         parent = top.parent()
         if parent:
-            parent_item: Item = parent.data(0, QtCore.Qt.UserRole)
+            parent_item: TreeItem = parent.data(0, QtCore.Qt.UserRole)
             above = parent.child(parent.indexOfChild(top) - 1)
         else:
-            parent_item: Item = self.model.root
+            parent_item: TreeItem = self.model.root
             above = self.ui.tree.topLevelItem(self.ui.tree.indexOfTopLevelItem(top) - 1)
-        above_item: Item = above.data(0, QtCore.Qt.UserRole)
+        above_item: TreeItem = above.data(0, QtCore.Qt.UserRole)
 
         for node in selection:
             # Move the item in the model.
-            item: Item = node.data(0, QtCore.Qt.UserRole)
-            parent_item.children.pop(item.sibling_number())
+            item: TreeItem = node.data(0, QtCore.Qt.UserRole)
+            parent_item.children.pop(item.childNumber())
             above_item.children.append(item)
             item.parent = above_item
 
@@ -454,7 +413,7 @@ class TabWidget(QtWidgets.QWidget):
             if parent:
                 parent.removeChild(node)
             else:
-                self.ui.tree.takeTopLevelItem(item.sibling_number())
+                self.ui.tree.takeTopLevelItem(item.childNumber())
             above.addChild(node)
 
             self.ui.tree.setCurrentItem(node, 0)
@@ -469,11 +428,11 @@ class TabWidget(QtWidgets.QWidget):
         if not selection:
             return
         for node in selection:
-            item: Item = node.data(0, QtCore.Qt.UserRole)
+            item: TreeItem = node.data(0, QtCore.Qt.UserRole)
             if item.parent.parent:
                 # Move the node in the model.
-                item.parent.children.pop(item.sibling_number())
-                index = item.parent.sibling_number() + 1
+                item.parent.children.pop(item.childNumber())
+                index = item.parent.childNumber() + 1
                 item.parent.parent.children.insert(index, item)
                 item.parent = item.parent.parent
 

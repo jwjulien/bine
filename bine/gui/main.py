@@ -30,8 +30,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from bine.gui.base.main import Ui_MainWindow
 from bine.gui.tab import TabWidget
-from bine.model.item import Item
-from bine.model.document import Document
+from bine.model.item import TreeItem
 from bine.settings import Settings
 
 
@@ -228,20 +227,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.tabs.setTabText(index, f'{dirty}{filename}')
             self.ui.tabs.setTabToolTip(index, os.path.abspath(tab.filename) if tab.filename else '')
 
-        def selection_changed(selection: List[QtWidgets.QListWidgetItem]) -> None:
+        def selection_changed(selection: List[TreeItem]) -> None:
             """Connected to the tree selection changes in the tab.
 
             Adjusts the availability of the options in the edit menu according to the new selection.
             """
-            def to_item(node):
-                return node.data(0, QtCore.Qt.UserRole)
-
             self.ui.actionInsertSibling.setEnabled(len(selection) == 1)
             self.ui.actionDelete.setEnabled(len(selection) > 0)
-            self.ui.actionMoveUp.setEnabled(all(to_item(node).sibling_number() > 0 for node in selection))
-            self.ui.actionMoveDown.setEnabled(all(to_item(node).sibling_number() < len(to_item(node).parent.children) - 1 for node in selection))
-            self.ui.actionIndent.setEnabled(all(to_item(node).sibling_number() != 0 for node in selection))
-            self.ui.actionDedent.setEnabled(all(to_item(node).level > 1 for node in selection))
+            self.ui.actionMoveUp.setEnabled(all(item.childNumber() > 0 for item in selection))
+            self.ui.actionMoveDown.setEnabled(all(not item.isLastChild() for item in selection))
+            self.ui.actionIndent.setEnabled(all(item.childNumber() != 0 for item in selection))
+            self.ui.actionDedent.setEnabled(all(item.level > 1 for item in selection))
 
         tab.selectionChanged.connect(selection_changed)
         tab.contentChanged.connect(content_changed)
@@ -284,7 +280,7 @@ class MainWindow(QtWidgets.QMainWindow):
 # ----------------------------------------------------------------------------------------------------------------------
     def tristate(self) -> None:
         self.settings.tristate = not self.settings.tristate
-        self.show_settings()
+        self._show_settings()
 
 
 

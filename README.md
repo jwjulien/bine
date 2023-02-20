@@ -1,15 +1,23 @@
-Bine Markdown Editor
+Markdown Checklist Editor
 ========================================================================================================================
-An extension of the Vine Markdown editing tool to specifically support working with checklists in Markdown format.
+The idea is to create a tool that is similar to Vine, my Markdown editor, where the output is a properly formatted Markdown file but the editor adds some additional features that are calculated and displayed automatically from the text, such as counts and progress bars.
 
-I have a personal obsession with checklists (The first step to recovery is admitting you have a problem).  Also, the way that I like to prepare and look forward to a vacation is to daydream about being there and ponder everything that I think I may need, adding things to packing lists.
+The motivation for this tool came from the packing lists that I have migrated from my online lists tool over to Markdown files in a Mercurial repo.  That move was motivated by wanting to have a single file for large lists to better facilitate searching for duplicate items but the large files are a tad cumbersome in a plain ole text editor.
 
-Over the years, I have created many bespoke tools to handle lists both online and offline and none of them have been overly ideal.  The more recent flavor has used Markdown checklists in a folder that I can use version control on what has solved issues with searching but I have lost features like progress bars and compartmentalization.  That's where this tool comes in.
 
-Bine aims to be a simple tool that:
 
-- Stores data in nicely formatted Markdown files that can be hand edited just the same.
-- Provides spell checking on the text inputs.
-- Sorts lists alphabetically so that version control can better merge multiple lists.
-- Provides support for nested lists in a tree structure.
-- Shows progress bars indicating the percentage complete for each node.
+
+Ideas/Requirements
+------------------------------------------------------------------------------------------------------------------------
+- Help find duplicates.
+    - Fuzzy search would be nice so as to find things with words in different orders.
+- Allow description to be placed at the top of the document.
+- Support trees with parent automatically checking when list is complete.
+    - Support drag and drop for moving items if possible.
+    - Would be really nice if the tree can be collapsed.
+- Spell check would be a major perc.
+- Definitely support checkboxes for each item.
+    - Would be kinda nice if the checkboxes support tri-state.
+- Show progress bars showing percentage complete.
+- Automatically sort list items in alphabetical order to better compare two lists.
+- 
