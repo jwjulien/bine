@@ -25,8 +25,9 @@
 import importlib.metadata
 import os
 from typing import List
+import ctypes
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtGui, QtWidgets
 
 from bine.gui.base.main import Ui_MainWindow
 from bine.gui.tab import TabWidget
@@ -46,6 +47,16 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        # Set a nice icon for the window.
+        icon = QtGui.QIcon()
+        icon.addFile('bine/assets/icons/main.png')
+        self.setWindowIcon(icon)
+
+        # Quirky way of getting Windows to use the above icon for the taskbar too.
+        # https://stackoverflow.com/questions/1551605/how-to-set-applications-taskbar-icon-in-windows-7/1552105#1552105
+        myappid = 'exsystems.bine.editor.1.0.0'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
         self.setWindowTitle(f'Bine Markdown Checklist Editor {importlib.metadata.version("bine")}')
 

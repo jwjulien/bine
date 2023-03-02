@@ -66,7 +66,6 @@ class Ui_Tab(object):
         sizePolicy1.setHeightForWidth(self.columns.sizePolicy().hasHeightForWidth())
         self.columns.setSizePolicy(sizePolicy1)
         self.columns.setDragEnabled(True)
-        self.columns.setAlternatingRowColors(True)
 
         self.verticalLayout_2.addWidget(self.columns)
 

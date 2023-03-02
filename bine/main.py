@@ -25,6 +25,7 @@
 import sys
 
 from PySide6 import QtWidgets
+import qdarktheme
 
 from bine.gui.main import MainWindow
 
@@ -35,7 +36,9 @@ from bine.gui.main import MainWindow
 # Main Function
 # ----------------------------------------------------------------------------------------------------------------------
 def main():
+    sys.argv += ['-platform', 'windows:darkmode=1']
     app = QtWidgets.QApplication(sys.argv)
+    qdarktheme.setup_theme('auto', 'sharp')
     window = MainWindow()
     window.show()
     return app.exec_()

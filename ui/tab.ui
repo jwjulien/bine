@@ -84,9 +84,6 @@
      <property name="dragEnabled">
       <bool>true</bool>
      </property>
-     <property name="alternatingRowColors">
-      <bool>true</bool>
-     </property>
     </widget>
    </item>
   </layout>
