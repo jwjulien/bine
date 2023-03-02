@@ -24,7 +24,7 @@
 # ----------------------------------------------------------------------------------------------------------------------
 from typing import List, Union
 
-from PySide6 import QtCore
+from PySide6 import QtCore, QtWidgets
 
 
 

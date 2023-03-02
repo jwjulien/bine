@@ -29,7 +29,7 @@ from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
 
 from bine.gui.base.tab import Ui_Tab
 from bine.model.item import TreeItem
-from bine.model.tree import TreeModel
+from bine.model.columns import ColumnsModel
 from bine.libraries.undo.item import CommandItemEdit, CommandItemDelete, CommandItemInsert
 
 
@@ -53,8 +53,8 @@ class TabWidget(QtWidgets.QWidget):
 
         self.settings = parent.settings
         self.filename = None
-        self.model = TreeModel(self.ui.tree)
-        self.ui.tree.setModel(self.model)
+        self.model = ColumnsModel(self.ui.columns)
+        self.ui.columns.setModel(self.model)
         self.undo_stack = QtGui.QUndoStack(self)
 
         self._changed_from_insert = False
@@ -71,15 +71,37 @@ class TabWidget(QtWidgets.QWidget):
         self.ui.popmenu_insert_child.triggered.connect(self.insert_child)
         self.ui.popmenu_delete.triggered.connect(self.delete)
 
-        self.ui.tree.selectionModel().selectionChanged.connect(self.on_select)
-        self.ui.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.ui.tree.customContextMenuRequested.connect(self.context)
-        # self.ui.tree.dropEvent = self.dropped
+        self.ui.group.toggled.connect(self.toggle_group)
+
+        self.ui.columns.selectionModel().selectionChanged.connect(self.on_select)
+        self.ui.columns.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui.columns.customContextMenuRequested.connect(self.context)
+        # self.ui.columns.dropEvent = self.dropped
         self.model.dataChanged.connect(lambda: self.contentChanged.emit())
         self.ui.title.textChanged.connect(self.title_changed)
         self.ui.description.textChanged.connect(self.description_changed)
         self.undo_stack.undoTextChanged.connect(lambda text: self.undoTextChanged.emit(text))
         self.undo_stack.redoTextChanged.connect(lambda text: self.redoTextChanged.emit(text))
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def toggle_group(self):
+        if self.ui.group.isChecked():
+            self.show_details()
+        else:
+            self.hide_details()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def show_details(self):
+        self.ui.group.setChecked(True)
+        self.ui.group.setFixedHeight(self.ui.group.sizeHint().height())
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def hide_details(self):
+        self.ui.group.setChecked(False)
+        self.ui.group.setFixedHeight(18)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -120,8 +142,8 @@ class TabWidget(QtWidgets.QWidget):
 
         self.ui.title.setText(self.model.title)
         self.ui.description.setPlainText(self.model.description)
-        self.ui.tree.setSelection(QtCore.QRect(0, 0, 1, 1), QtCore.QItemSelectionModel.ClearAndSelect)
-        self.expand_all()
+        # self.ui.columns.setSelection(QtCore.QRect(0, 0, 1, 1), QtCore.QItemSelectionModel.ClearAndSelect)
+        # self.expand_all()
 
         self.contentChanged.emit()
 
@@ -184,7 +206,7 @@ class TabWidget(QtWidgets.QWidget):
 
 # ----------------------------------------------------------------------------------------------------------------------
     def on_select(self) -> List[TreeItem]:
-        selections = self.ui.tree.selectedIndexes()
+        selections = self.ui.columns.selectedIndexes()
         items = [self.model.getItem(index) for index in selections]
         self.selectionChanged.emit(items)
 
@@ -205,7 +227,7 @@ class TabWidget(QtWidgets.QWidget):
     #     """Fires when the user modifies the item in the tree."""
         # item: TreeItem = node.data(0, QtCore.Qt.UserRole)
         # description = f'change item text from "{item.text}" to "{node.text(0)}"'
-        # command = CommandItemEdit(self.ui.tree, node, item, description)
+        # command = CommandItemEdit(self.ui.columns, node, item, description)
         # self.undo_stack.push(command)
         # if self._changed_from_insert:
         #     self.undo_stack.endMacro()
@@ -238,7 +260,7 @@ class TabWidget(QtWidgets.QWidget):
     #         event: The DropEvent object with info about what was dropped.
     #     """
     #     # Invoke the original parent function we are overriding.
-    #     QtWidgets.QTreeWidget.dropEvent(self.ui.tree, event)
+    #     QtWidgets.QTreeWidget.dropEvent(self.ui.columns, event)
 
     #     def recurse(node: QtWidgets.QTreeWidgetItem, parent: TreeItem = None) -> List[TreeItem]:
     #         items = []
@@ -257,8 +279,8 @@ class TabWidget(QtWidgets.QWidget):
 
     #     # Reload the document structure from the tree.
     #     self.model.root.children = []
-    #     for idx in range(self.ui.tree.topLevelItemCount()):
-    #         node = self.ui.tree.topLevelItem(idx)
+    #     for idx in range(self.ui.columns.topLevelItemCount()):
+    #         node = self.ui.columns.topLevelItem(idx)
     #         item = node.data(0, QtCore.Qt.UserRole)
     #         item.parent = self.model.root
     #         item.children = recurse(node, item)
@@ -274,49 +296,44 @@ class TabWidget(QtWidgets.QWidget):
         Arguments:
             point: The location where the right click took place in the tree.
         """
-        self.ui.popmenu.exec(self.ui.tree.mapToGlobal(point))
+        self.ui.popmenu.exec(self.ui.columns.mapToGlobal(point))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def insert_sibling(self):
         """Called to insert a new item into the tree at the selected location."""
-        selection = self.ui.tree.selectedItems()
-        new_item = TreeItem('', '')
-        new_node = self._make_item(new_item)
-        selected = None if not selection or not selection[-1].parent() else selection[-1]
-        command = CommandItemInsert(self.ui.tree, new_node, selected, self.model.root, True)
-        self.undo_stack.beginMacro('insert new sibling')
-        self._changed_from_insert = True
-        self.undo_stack.push(command)
-        self.ui.tree.editItem(new_node, column=0)
-        self.ui.tree.setCurrentItem(new_node, 0)
+        indexes = self.ui.columns.selectionModel().selectedIndexes()
+        selection = [self.model.getItem(index) for index in indexes]
+        parent = self.model.root if not selection or not selection[-1].parent else selection[-1].parent
+        index = self.model.insertItem(parent)
+        self.ui.columns.edit(index)
         self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def insert_child(self):
         """Called to insert a new item into the tree under the selected location."""
-        selection = self.ui.tree.selectedItems()
+        selection = self.ui.columns.selectedItems()
         new_item = TreeItem('', '')
         new_node = self._make_item(new_item)
         selected = None if not selection else selection[-1]
-        command = CommandItemInsert(self.ui.tree, new_node, selected, self.model.root, False)
+        command = CommandItemInsert(self.ui.columns, new_node, selected, self.model.root, False)
         self.undo_stack.beginMacro('insert new child')
         self._changed_from_insert = True
         self.undo_stack.push(command)
-        self.ui.tree.editItem(new_node, column=0)
-        self.ui.tree.setCurrentItem(new_node, 0)
+        self.ui.columns.editItem(new_node, column=0)
+        self.ui.columns.setCurrentItem(new_node, 0)
         self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def _selection(self, reverse: bool = False) -> List[QtWidgets.QListWidgetItem]:
         """Get a list of currently selected items, sorted by their index."""
-        selection = self.ui.tree.selectedItems()
+        selection = self.ui.columns.selectedItems()
         def sort_by_index(node) -> int:
             if node.parent():
                 return node.parent().indexOfChild(node)
-            return self.ui.tree.indexOfTopLevelItem(node)
+            return self.ui.columns.indexOfTopLevelItem(node)
         selection.sort(key=sort_by_index, reverse=reverse)
         return selection
 
@@ -328,9 +345,9 @@ class TabWidget(QtWidgets.QWidget):
         if not selection:
             return
         for node in selection:
-            command = CommandItemDelete(self.ui.tree, node)
+            command = CommandItemDelete(self.ui.columns, node)
             self.undo_stack.push(command)
-        self.ui.tree.clearSelection()
+        self.ui.columns.clearSelection()
         self.contentChanged.emit()
 
 
@@ -352,10 +369,10 @@ class TabWidget(QtWidgets.QWidget):
                     parent.removeChild(node)
                     parent.insertChild(index - 1, node)
                 else:
-                    self.ui.tree.takeTopLevelItem(index)
-                    self.ui.tree.insertTopLevelItem(index - 1, node)
+                    self.ui.columns.takeTopLevelItem(index)
+                    self.ui.columns.insertTopLevelItem(index - 1, node)
 
-                self.ui.tree.setCurrentItem(node, 0)
+                self.ui.columns.setCurrentItem(node, 0)
 
         self.contentChanged.emit()
 
@@ -378,10 +395,10 @@ class TabWidget(QtWidgets.QWidget):
                     parent.removeChild(node)
                     parent.insertChild(index + 1, node)
                 else:
-                    self.ui.tree.takeTopLevelItem(index)
-                    self.ui.tree.insertTopLevelItem(index + 1, node)
+                    self.ui.columns.takeTopLevelItem(index)
+                    self.ui.columns.insertTopLevelItem(index + 1, node)
 
-                self.ui.tree.setCurrentItem(node, 0)
+                self.ui.columns.setCurrentItem(node, 0)
 
         self.contentChanged.emit()
 
@@ -399,7 +416,7 @@ class TabWidget(QtWidgets.QWidget):
             above = parent.child(parent.indexOfChild(top) - 1)
         else:
             parent_item: TreeItem = self.model.root
-            above = self.ui.tree.topLevelItem(self.ui.tree.indexOfTopLevelItem(top) - 1)
+            above = self.ui.columns.topLevelItem(self.ui.columns.indexOfTopLevelItem(top) - 1)
         above_item: TreeItem = above.data(0, QtCore.Qt.UserRole)
 
         for node in selection:
@@ -413,10 +430,10 @@ class TabWidget(QtWidgets.QWidget):
             if parent:
                 parent.removeChild(node)
             else:
-                self.ui.tree.takeTopLevelItem(item.childNumber())
+                self.ui.columns.takeTopLevelItem(item.childNumber())
             above.addChild(node)
 
-            self.ui.tree.setCurrentItem(node, 0)
+            self.ui.columns.setCurrentItem(node, 0)
 
         self.contentChanged.emit()
 
@@ -448,9 +465,9 @@ class TabWidget(QtWidgets.QWidget):
                 if grandparent:
                     grandparent.insertChild(index, node)
                 else:
-                    self.ui.tree.insertTopLevelItem(index, node)
+                    self.ui.columns.insertTopLevelItem(index, node)
 
-                self.ui.tree.setCurrentItem(node, 0)
+                self.ui.columns.setCurrentItem(node, 0)
 
         self.contentChanged.emit()
 
@@ -458,13 +475,13 @@ class TabWidget(QtWidgets.QWidget):
 # ----------------------------------------------------------------------------------------------------------------------
     def expand_all(self):
         """Expand all of the nodes in the tree."""
-        self.ui.tree.expandAll()
+        self.ui.columns.expandAll()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def collapse_all(self):
         """Collapse all of the nodes in the tree."""
-        self.ui.tree.collapseAll()
+        self.ui.columns.collapseAll()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
