@@ -30,9 +30,9 @@ from PySide6 import QtCore, QtWidgets
 
 
 # ======================================================================================================================
-# Tree Item Class
+# Checklist Item Class
 # ----------------------------------------------------------------------------------------------------------------------
-class TreeItem:
+class ChecklistItem:
     """Represents an "item" in the document tree containing checklist items with optional lists.
 
     Attributes:
@@ -41,11 +41,11 @@ class TreeItem:
         checked: Boolean indicating if this item is checked.  Calculated for non-leaf nodes.
         children: List of Items under this item - may be empty in the case of leaves.
     """
-    def __init__(self, parent: 'TreeItem' = None, text: str = '', checked: bool = False):
-        self.parent: 'TreeItem' = parent
+    def __init__(self, parent: 'ChecklistItem' = None, text: str = '', checked: bool = False):
+        self.parent: 'ChecklistItem' = parent
         self.text: str = text
         self._checked: bool = checked
-        self.children: List['TreeItem'] = []
+        self.children: List['ChecklistItem'] = []
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -53,6 +53,9 @@ class TreeItem:
     def checked(self):
         if not self.children:
             return self._checked
+        # TODO: Can this be an option?  It's handy for some applications but there are circumstances when the parent
+        # is better left unchecked until it is packed.  Like a duffel bag might be full, but not checked until loaded
+        # into the car.
         return all([child.checked for child in self.children])
 
     @checked.setter
@@ -66,7 +69,17 @@ class TreeItem:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def child(self, number: int) -> 'TreeItem':
+    @property
+    def chain(self) -> List['ChecklistItem']:
+        links = []
+        if self.parent:
+            links.extend(self.parent.chain)
+        links.append(self)
+        return links
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def child(self, number: int) -> 'ChecklistItem':
         if number < 0 or number >= len(self.children):
             return None
         return self.children[number]
@@ -78,9 +91,22 @@ class TreeItem:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def childNumber(self) -> int:
+    def columnCount(self) -> int:
+        # Checklist items specifically don't use columns - only one for the text of the item is supported.
+        return 1
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def row(self) -> int:
+        """Get this item's row index.
+
+        Returns:
+            The zero-based row number of this item within it's parent's list of children.
+        """
+        # The root item is the only item without a parent and is singular, so always return 0.
         if self.parent is None:
             return 0
+
         return self.parent.children.index(self)
 
 
@@ -88,42 +114,54 @@ class TreeItem:
     def isLastChild(self) -> bool:
         if self.parent is None:
             return False
-        return self.childNumber() == (len(self.parent.children) - 1)
+        return self.row() == (len(self.parent.children) - 1)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def lastChild(self) -> 'TreeItem':
+    def lastChild(self) -> 'ChecklistItem':
         return self.children[-1] if self.children else None
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def data(self, role: QtCore.Qt.ItemDataRole) -> Union[str, int]:
+    def data(self, column: int, role: QtCore.Qt.ItemDataRole) -> Union[str, int]:
         if role == QtCore.Qt.CheckStateRole:
             return int(QtCore.Qt.Checked if self.checked else QtCore.Qt.Unchecked)
 
-        elif role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]:
+        elif role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole] and column == 0:
             return self.text
 
         return None
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def setData(self, value: Union[str, QtCore.Qt.CheckState], role: QtCore.Qt.ItemDataRole) -> None:
+    def setData(self,
+                column: int,
+                value: Union[str, QtCore.Qt.CheckState],
+                role: QtCore.Qt.ItemDataRole
+                ) -> bool:
         if role == QtCore.Qt.CheckStateRole:
             self.checked = value == QtCore.Qt.Checked
-        else:
-            self.text = value
+            return True
 
-        return True
+        if column == 0:
+            self.text = value
+            return True
+
+        # No good - indicate that we didn't update anything.
+        return False
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def insertChildren(self, position: int, count: int) -> bool:
+    def insertChildren(self, position: int, count: int, columns: int) -> bool:
         if position < 0 or position > len(self.children):
             return False
 
+        # This specific model only supports one column for text.
+        assert columns == 1
+
         for _ in range(count):
-            item = TreeItem(self)
+            item = ChecklistItem(self)
             self.children.insert(position, item)
 
         return True
@@ -150,7 +188,7 @@ class TreeItem:
 
 # ----------------------------------------------------------------------------------------------------------------------
     def __repr__(self) -> str:
-        return f'<TreeItem at 0x{id(self):x} checked={self.checked} text="{self.text}">'
+        return f'<ChecklistItem at 0x{id(self):x} checked={self.checked} text="{self.text}">'
 
 
 

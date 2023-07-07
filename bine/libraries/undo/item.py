@@ -24,7 +24,7 @@
 # ----------------------------------------------------------------------------------------------------------------------
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from bine.model.item import TreeItem
+from bine.model.item import ChecklistItem
 
 
 
@@ -37,14 +37,14 @@ class CommandItemEdit(QtGui.QUndoCommand):
     def __init__(self,
                  widget: QtWidgets.QTreeWidget,
                  node: QtWidgets.QTreeWidgetItem,
-                 item: TreeItem,
+                 item: ChecklistItem,
                  description: str,
                  column: int = 0):
         super().__init__(description)
         self._widget: QtWidgets.QTreeWidget = widget
         self._node: QtWidgets.QTreeWidgetItem = node
         self._column: int = column
-        self._item: TreeItem = item,
+        self._item: ChecklistItem = item,
         self._text_before: str = item.text
         self._checked_before: QtCore.Qt.CheckState  = QtCore.Qt.Checked if item.checked else QtCore.Qt.Unchecked
         self._text_after: str = node.text(column)
@@ -87,8 +87,8 @@ class CommandItemDelete(QtGui.QUndoCommand):
         self._widget: QtWidgets.QTreeWidget = widget
         self._node: QtWidgets.QTreeWidgetItem = node
         self._parent: QtWidgets.QTreeWidgetItem = node.parent()
-        self._item: TreeItem = item
-        self._index: int = item.childNumber()
+        self._item: ChecklistItem = item
+        self._index: int = item.row()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -124,7 +124,7 @@ class CommandItemInsert(QtGui.QUndoCommand):
                  widget: QtWidgets.QTreeWidget,
                  node: QtWidgets.QTreeWidgetItem,
                  selected: QtWidgets.QTreeWidgetItem,
-                 root: TreeItem,
+                 root: ChecklistItem,
                  sibling: bool):
         item = node.data(0, QtCore.Qt.UserRole)
         description = f'insert "{item.text}"'
@@ -132,9 +132,9 @@ class CommandItemInsert(QtGui.QUndoCommand):
         self._widget: QtWidgets.QTreeWidget = widget
         self._node: QtWidgets.QTreeWidgetItem = node
         self._selected: QtWidgets.QTreeWidgetItem = selected
-        self._root: TreeItem = root
+        self._root: ChecklistItem = root
         self._sibling: bool = sibling
-        self._item: TreeItem = item
+        self._item: ChecklistItem = item
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ class CommandItemInsert(QtGui.QUndoCommand):
             self._widget.addTopLevelItem(self._node)
         else:
             selected_node = self._selected
-            selected_item: TreeItem = selected_node.data(0, QtCore.Qt.UserRole)
+            selected_item: ChecklistItem = selected_node.data(0, QtCore.Qt.UserRole)
             self._item.parent = selected_item
             if self._sibling:
                 selected_item.parent.children.append(self._item)
@@ -165,7 +165,7 @@ class CommandItemInsert(QtGui.QUndoCommand):
             self._widget.takeTopLevelItem(self._widget.indexOfTopLevelItem(self._node))
         else:
             self._node.parent().removeChild(self._node)
-        self._item.parent.children.pop(self._item.childNumber())
+        self._item.parent.children.pop(self._item.row())
         self._widget.blockSignals(False)
 
 
@@ -186,8 +186,8 @@ class CommandItemMove(QtGui.QUndoCommand):
         self._widget: QtWidgets.QTreeWidget = widget
         self._node: QtWidgets.QTreeWidgetItem = node
         self._parent: QtWidgets.QTreeWidgetItem = node.parent()
-        self._item: TreeItem = item
-        self._index: int = item.childNumber()
+        self._item: ChecklistItem = item
+        self._index: int = item.row()
 
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -22,7 +22,7 @@
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
-import importlib.metadata
+from importlib import metadata
 import os
 from typing import List
 import ctypes
@@ -31,7 +31,7 @@ from PySide6 import QtGui, QtWidgets
 
 from bine.gui.base.main import Ui_MainWindow
 from bine.gui.tab import TabWidget
-from bine.model.item import TreeItem
+from bine.model.item import ChecklistItem
 from bine.settings import Settings
 
 
@@ -48,6 +48,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        name = 'bine'
+        version = metadata.version(name)
+        title = f'{name.title()} - {version}'
+        self.setWindowTitle(title)
+
         # Set a nice icon for the window.
         icon = QtGui.QIcon()
         icon.addFile('bine/assets/icons/main.png')
@@ -55,10 +60,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Quirky way of getting Windows to use the above icon for the taskbar too.
         # https://stackoverflow.com/questions/1551605/how-to-set-applications-taskbar-icon-in-windows-7/1552105#1552105
-        myappid = 'exsystems.bine.editor.1.0.0'
+        myappid = f'exsystems.{name}.editor.{version}'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-
-        self.setWindowTitle(f'Bine Markdown Checklist Editor {importlib.metadata.version("bine")}')
 
         # TODO: Persist these settings to a user's config file.
         self.settings = Settings(tristate=True)
@@ -75,15 +78,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionUndo.triggered.connect(lambda: self.ui.tabs.currentWidget().undo())
         self.ui.actionRedo.triggered.connect(lambda: self.ui.tabs.currentWidget().redo())
-        self.ui.actionInsertSibling.triggered.connect(lambda: self.ui.tabs.currentWidget().insert_sibling())
-        self.ui.actionInsertChild.triggered.connect(lambda: self.ui.tabs.currentWidget().insert_child())
+        self.ui.actionCut.triggered.connect(lambda: self.ui.tabs.currentWidget().cut())
+        self.ui.actionCopy.triggered.connect(lambda: self.ui.tabs.currentWidget().copy())
+        self.ui.actionPaste.triggered.connect(lambda: self.ui.tabs.currentWidget().paste())
+        self.ui.actionInsert.triggered.connect(lambda: self.ui.tabs.currentWidget().insert())
         self.ui.actionDelete.triggered.connect(lambda: self.ui.tabs.currentWidget().delete())
         self.ui.actionMoveUp.triggered.connect(lambda: self.ui.tabs.currentWidget().move_up())
         self.ui.actionMoveDown.triggered.connect(lambda: self.ui.tabs.currentWidget().move_down())
         self.ui.actionIndent.triggered.connect(lambda: self.ui.tabs.currentWidget().indent())
         self.ui.actionDedent.triggered.connect(lambda: self.ui.tabs.currentWidget().dedent())
-        self.ui.actionExpandAll.triggered.connect(lambda: self.ui.tabs.currentWidget().expand_all())
-        self.ui.actionCollapseAll.triggered.connect(lambda: self.ui.tabs.currentWidget().collapse_all())
+        self.ui.actionCheckAll.triggered.connect(lambda: self.ui.tabs.currentWidget().check_all())
+        self.ui.actionUncheckAll.triggered.connect(lambda: self.ui.tabs.currentWidget().uncheck_all())
         self.ui.actionTristate.triggered.connect(self.tristate)
         self.ui.actionExportHtmlWhite.triggered.connect(lambda: self.ui.tabs.currentWidget().export_html('white'))
         self.ui.actionExportHtmlSlate.triggered.connect(lambda: self.ui.tabs.currentWidget().export_html('slate'))
@@ -91,6 +96,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tabs.tabCloseRequested.connect(self.close_tab)
         self.ui.tabs.currentChanged.connect(self.tab_changed)
         self.tab_changed()
+
+        # TODO: What about remembering files that were open last session and reopening them?
+
+        # TODO: This is just for testing - I'm sick of opening a file every single time I relaunch the app.
+        tab = self.new()
+        tab.open('nested.md')
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -238,7 +249,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.tabs.setTabText(index, f'{dirty}{filename}')
             self.ui.tabs.setTabToolTip(index, os.path.abspath(tab.filename) if tab.filename else '')
 
-        def selection_changed(selection: List[TreeItem]) -> None:
+        def selection_changed(selection: List[ChecklistItem]) -> None:
             """Connected to the tree selection changes in the tab.
 
             Adjusts the availability of the options in the edit menu according to the new selection.

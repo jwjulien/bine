@@ -17,7 +17,11 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
-"""A document represents the root node in the tree and contains a title, description and columns of lists."""
+"""A hierarchial model of items to represent a tree structure for Qt views.
+
+Heavy inspiration for this model was taken from:
+https://felgo.com/doc/qt/qtwidgets-itemviews-simpletreemodel-example/#treemodel-class-implementation
+"""
 
 # ======================================================================================================================
 # Imports
@@ -29,8 +33,8 @@ from typing import List, Union
 from markdown import markdown
 from PySide6 import QtCore, QtWidgets
 
-from bine.model.item import TreeItem
 from bine.settings import Settings
+from bine.model.item import ChecklistItem
 
 
 
@@ -40,15 +44,20 @@ from bine.settings import Settings
 # ----------------------------------------------------------------------------------------------------------------------
 class ColumnsModel(QtCore.QAbstractItemModel):
 
-    def __init__(self, parent: QtWidgets.QColumnView = None):
+    def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
 
         self._title: str = ""
         self._description: str = ""
-        self.root: TreeItem = TreeItem(text='root')
+
+        self.root: ChecklistItem = ChecklistItem(text='root')
+
         self._cached = ''
 
 
+
+# ======================================================================================================================
+# Getters/Setters for high-level properties
 # ----------------------------------------------------------------------------------------------------------------------
     @property
     def description(self):
@@ -73,29 +82,12 @@ class ColumnsModel(QtCore.QAbstractItemModel):
             self.dataChanged.emit(None, None)
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-    def columnCount(self, parent = QtCore.QModelIndex()) -> int:
-        return 4
 
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def data(self, index: QtCore.QModelIndex, role: QtCore.Qt.ItemDataRole):
-        if not index.isValid():
-            return None
-
-        if role not in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole, QtCore.Qt.CheckStateRole]:
-            return None
-
-        item = self.getItem(index)
-        return item.data(role)
-
-
+# ======================================================================================================================
+# "Special" Methods? - Not really sure what best to call these methods, they don't fall into a single category below.
 # ----------------------------------------------------------------------------------------------------------------------
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlags:
         if not index.isValid():
-            return QtCore.Qt.ItemIsDropEnabled
-
-        if index.column() != 0:
             return QtCore.Qt.NoItemFlags
 
         flags = QtCore.Qt.ItemIsEnabled
@@ -103,78 +95,29 @@ class ColumnsModel(QtCore.QAbstractItemModel):
         flags |= QtCore.Qt.ItemIsEditable
         flags |= QtCore.Qt.ItemIsUserCheckable
         flags |= QtCore.Qt.ItemIsAutoTristate
-        flags |= QtCore.Qt.ItemIsDragEnabled
-        flags |= QtCore.Qt.ItemIsDropEnabled
+        # flags |= QtCore.Qt.ItemIsDragEnabled
+        # flags |= QtCore.Qt.ItemIsDropEnabled
         return flags
 
 
+
+# ======================================================================================================================
+# Methods for Reading TreeModel
 # ----------------------------------------------------------------------------------------------------------------------
-    def mimeTypes(self) -> List[str]:
-        return [
-            'application/x-treeitemlist'
-        ]
+    def item(self, index: QtCore.QModelIndex) -> ChecklistItem:
+        """Get the item from the provided index.
 
+        Valid indexes *should* have ChecklistItems attached to their internalPointer's, but this method will verify that
+        the index is valid and that the internalPointer is too.
 
-# ----------------------------------------------------------------------------------------------------------------------
-    def mimeData(self, indexes: List[QtCore.QModelIndex]) -> QtCore.QMimeData:
-        items = [self.getItem(index) for index in indexes]
+        Arguments:
+            index: A QModelIndex that refers to a ChecklistItem.
 
-        # Use the super's mimeData method to generate the QMimeData instance so that it's persistent.  Creating it
-        # locally causes a crash when the garbage collector removes it upon return.
-        data = super().mimeData(indexes)
-
-        data.setText('\n'.join(item.text for item in items))
-        data.setData('application/x-treeitemlist', pickle.dumps(items))
-
-        return data
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def supportedDropActions(self) -> QtCore.Qt.DropActions:
-        return QtCore.Qt.MoveAction
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def dropMimeData(self,
-                     data: QtCore.QMimeData,
-                     action: QtCore.Qt.DropAction,
-                     row: int,
-                     column: int,
-                     parent: Union[QtCore.QModelIndex, QtCore.QPersistentModelIndex]
-                    ) -> bool:
-        if not self.canDropMimeData(data, action, row, column, parent) or action == QtCore.Qt.IgnoreAction:
-            return False
-
-        if row > -1:
-            position = row
-        else:
-            position = self.rowCount(parent if parent.isValid() else QtCore.QModelIndex())
-
-        parent_item = self.getItem(parent)
-
-        items: List[TreeItem] = pickle.loads(data.data('application/x-treeitemlist'))
-        for item in items:
-
-            # If this item is being moved up in the same parent list then adjust the insertion position.
-            print(position, item.childNumber(), row, parent_item, item.parent)
-            if item.childNumber() < position and parent_item == item.parent:
-                position -= 1
-                print('Decrement')
-
-            self.removeItem(item)
-            parent_item.insertChildren(position, 1)
-
-            child_item = parent_item.child(position)
-            child_item.setData(item.text, QtCore.Qt.EditRole)
-            child_item.setData(item.checked, QtCore.Qt.CheckStateRole)
-
-        self.dataChanged.emit(parent, parent)
-        return True
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def getItem(self, index: QtCore.QModelIndex) -> TreeItem:
-        if index.isValid():
+        Returns:
+            The ChecklistItem from the provided `index`, or the root ChecklistItem in the event that the `index` is
+            invalid.
+        """
+        if index is not None and index.isValid():
             item = index.internalPointer()
             if item:
                 return item
@@ -183,106 +126,285 @@ class ColumnsModel(QtCore.QAbstractItemModel):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: QtCore.Qt.ItemDataRole = QtCore.Qt.DisplayRole):
-        # This model does not support headers.
+    def index(self,
+              row: int,
+              column: int,
+              parent_index: QtCore.QModelIndex = QtCore.QModelIndex()
+              ) -> QtCore.QModelIndex:
+        """Get the index for the item at the specified location under the provided parent.
+
+        Arguments:
+            row: Integer row number of the child item of interest.
+            column: Integer column number of the child item of interest.
+            parent_index: QModelIndex of the parent item for this item.
+
+        Returns:
+            QModelIndex for the specified item.
+        """
+        # Return an invalid index of the provided values are not contained in this model.
+        if not self.hasIndex(row, column, parent_index):
+            return QtCore.QModelIndex()
+
+        # Determine the parent item for this index based upon the provided parent index.
+        parent_item = self.item(parent_index)
+
+        # Fetch the child corresponding to the provided row.
+        child_item = parent_item.child(row)
+        if child_item:
+            return self.createIndex(row, column, child_item)
+
+        # This shouldn't really happen, but if there is no corresponding child then return an invalid index.
+        return QtCore.QModelIndex()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def root_index(self) -> QtCore.QModelIndex:
+        """Special method that returns the index of the root.
+
+        Devised to allow appending items to the root list when no selections are valid.
+
+        Returns:
+            A QModelIndex for the end of the root list.
+        """
+        return self.createIndex(self.root.childCount(), 0, self.root)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def parent(self, child_index: QtCore.QModelIndex) -> QtCore.QModelIndex:
+        if not child_index.isValid():
+            return QtCore.QModelIndex()
+
+        # Get the item that corresponds with the provided child index.
+        child_item: ChecklistItem = self.item(child_index)
+
+        # Extract the parent item from that child item.
+        parent_item: ChecklistItem = child_item.parent
+
+        # Return an invalid index for the root item - we do not want to display it.
+        if parent_item is None or parent_item == self.root:
+            return QtCore.QModelIndex()
+
+        # If all is good, return an index for the parent item.
+        return self.createIndex(parent_item.row(), 0, parent_item)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def rowCount(self, parent_index: QtCore.QModelIndex = QtCore.QModelIndex()) -> int:
+        """Get the number of rows associated with an index.
+
+        Arguments:
+            parent_index: The QModelIndex of the parent containing child items.
+
+        Returns:
+            The integer number of rows (i.e. children) associated with the provided index or the number of top level
+            items directly under the root node if the provided index is invalid.
+        """
+        # If being asked for the row cound on anything other than column 0 then the answer is always zero.
+        if parent_index.isValid() and parent_index.column() > 0:
+            return 0
+
+        # Grab the item from the index and return the number of children associated with it.
+        parent_item: ChecklistItem = self.item(parent_index)
+        return parent_item.childCount()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def columnCount(self, parent_index = None) -> int:
+        parent_item: ChecklistItem = self.item(parent_index)
+        return parent_item.columnCount()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def data(self, index: QtCore.QModelIndex, role: QtCore.Qt.ItemDataRole) -> Union[int, str]:
+        if not index.isValid():
+            return None
+
+        item: ChecklistItem = self.item(index)
+        return item.data(index.column(), role)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def headerData(self,
+                   section: int,
+                   orientation: QtCore.Qt.Orientation,
+                   role: QtCore.Qt.ItemDataRole = QtCore.Qt.DisplayRole
+                   ) -> str:
+        # This model does not currently support headers.
         return None
 
+        # TODO: Can we make this some kind of option to make this model more flexible?
+        # if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+        #     return self.root.data(section)
+
+
+
+
+# ======================================================================================================================
+# Methods for Editing The TreeModel
+# ----------------------------------------------------------------------------------------------------------------------
+    def setData(self,
+                index: QtCore.QModelIndex,
+                value: Union[str, QtCore.Qt.CheckState],
+                role: QtCore.Qt.ItemDataRole = QtCore.Qt.EditRole
+                ) -> bool:
+
+        item: ChecklistItem = self.item(index)
+        success: bool = item.setData(index.column(), value, role)
+
+        if success:
+            print('Set', item)
+            self.dataChanged.emit(index, index)
+
+        return success
+
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def index(self, row: int, column: int, parent: QtCore.QModelIndex = QtCore.QModelIndex()):
-        if parent.isValid() and parent.column() != 0:
-            return QtCore.QModelIndex()
-
-        parent_item = self.getItem(parent)
-        childItem = parent_item.child(row)
-        if childItem:
-            return self.createIndex(row, column, childItem)
-        else:
-            return QtCore.QModelIndex()
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def insertColumns(self, position: int, columns: int, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
-        # This model only supports single columns - no additions or removals are supported.
+    def setHeaderData(self,
+                      section: int,
+                      orientation: QtCore.Qt.Orientation,
+                      value: ChecklistItem,
+                      role: QtCore.Qt.ItemDataRole = QtCore.Qt.EditRole
+                      ) -> bool:
+        # This model currently doesn't support headers so there's nothing to do here.
+        # TODO: If we add support for headers then this will also be needed.
         return False
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def removeItem(self, item: TreeItem) -> bool:
-        row = item.childNumber()
-        print('Remove item', row, item.parent)
-        index = self.createIndex(row, 0, item)
-        return self.removeRows(row, 1, index.parent())
+    def insertColumns(self, position: int, columns: int, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
+        # This model currently only supports single columns - no additions or removals are supported.
+        return False
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def insertRows(self, position: int, rows: int, parent=QtCore.QModelIndex()) -> bool:
-        parent_item = self.getItem(parent)
+    def removeColumns(self, position: int, columns: int, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
+        # This model currently only supports exactly one column - additions and removals are not supported.
+        return False
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def insertRows(self, position: int, rows: int, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
+        parent_item = self.item(parent)
         self.beginInsertRows(parent, position, position + rows - 1)
-        success = parent_item.insertChildren(position, rows)
+        success = parent_item.insertChildren(position, rows, 1)
         self.endInsertRows()
         return success
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def parent(self, index: QtCore.QModelIndex) -> QtCore.QModelIndex:
-        if not index.isValid():
-            return QtCore.QModelIndex()
+    def removeRows(self, position: int, rows: int, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
+        parent_item: ChecklistItem = self.item(parent)
 
-        childItem = self.getItem(index)
-        parent_item: TreeItem = childItem.parent
+        self.beginRemoveRows(parent, position, position + rows - 1)
+        success = parent_item.removeChildren(position, rows)
+        print(f'Remove {rows} rows at {position} from {parent_item}')
+        self.endRemoveRows()
+        print(parent_item.children)
 
-        if parent_item is None or parent_item == self.root:
-            return QtCore.QModelIndex()
+        return success
 
-        return self.createIndex(parent_item.childNumber(), 0, parent_item)
+
+
+
+
+
+
+
+
+
+
+
+# ======================================================================================================================
+# !?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def removeColumns(self, position: int, columns: int, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
-        # This model only supports exactly one column - additions and removals are not supported.
-        return False
+#     def mimeTypes(self) -> List[str]:
+#         return [
+#             'application/x-treeitemlist'
+#         ]
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-    # def removeRows(self, position: int, rows: int, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
-    #     parent_item: TreeItem = self.getItem(parent)
+# # ----------------------------------------------------------------------------------------------------------------------
+#     def mimeData(self, indexes: List[QtCore.QModelIndex]) -> QtCore.QMimeData:
+#         items = [self.item(index) for index in indexes]
 
-    #     self.beginRemoveRows(parent, position, position + rows - 1)
-    #     success = parent_item.removeChildren(position, rows)
-    #     print(f'Remove {rows} rows at {position} from {parent_item}')
-    #     self.endRemoveRows()
-    #     print(parent_item.children)
+#         # Use the super's mimeData method to generate the QMimeData instance so that it's persistent.  Creating it
+#         # locally causes a crash when the garbage collector removes it upon return.
+#         data = super().mimeData(indexes)
 
-    #     return success
+#         data.setText('\n'.join(item.text for item in items))
+#         data.setData('application/x-treeitemlist', pickle.dumps(items))
 
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> int:
-        parent_item = self.getItem(parent)
-        rows = parent_item.childCount()
-        return rows
+#         return data
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-    def setData(self, index: QtCore.QModelIndex, value: TreeItem, role: QtCore.Qt.ItemDataRole = QtCore.Qt.EditRole) -> bool:
-        if role not in [QtCore.Qt.EditRole, QtCore.Qt.CheckStateRole]:
-            return False
-
-        item = self.getItem(index)
-        print('Set', item)
-        result = item.setData(value, role)
-
-        if result:
-            self.dataChanged.emit(index, index)
-
-        return result
+# # ----------------------------------------------------------------------------------------------------------------------
+#     def supportedDropActions(self) -> QtCore.Qt.DropActions:
+#         return QtCore.Qt.MoveAction
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-    def setHeaderData(self, section: int, orientation: QtCore.Qt.Orientation, value: TreeItem, role: QtCore.Qt.ItemDataRole = QtCore.Qt.EditRole) -> bool:
-        # This model does not support headers.
-        return False
+# # ----------------------------------------------------------------------------------------------------------------------
+#     def dropMimeData(self,
+#                      data: QtCore.QMimeData,
+#                      action: QtCore.Qt.DropAction,
+#                      row: int,
+#                      column: int,
+#                      parent: Union[QtCore.QModelIndex, QtCore.QPersistentModelIndex]
+#                     ) -> bool:
+#         if not self.canDropMimeData(data, action, row, column, parent) or action == QtCore.Qt.IgnoreAction:
+#             return False
+
+#         if row > -1:
+#             position = row
+#         else:
+#             position = self.rowCount(parent if parent.isValid() else QtCore.QModelIndex())
+
+#         parent_item = self.item(parent)
+
+#         items: List[ChecklistItem] = pickle.loads(data.data('application/x-treeitemlist'))
+#         for item in items:
+
+#             # If this item is being moved up in the same parent list then adjust the insertion position.
+#             print(position, item.row(), row, parent_item, item.parent)
+#             if item.row() < position and parent_item == item.parent:
+#                 position -= 1
+#                 print('Decrement')
+
+#             self.removeItem(item)
+#             parent_item.insertChildren(position, 1)
+
+#             child_item = parent_item.child(position)
+#             child_item.setData(0, item.text, QtCore.Qt.EditRole)
+#             child_item.setData(0, item.checked, QtCore.Qt.CheckStateRole)
+
+#         self.dataChanged.emit(parent, parent)
+#         return True
+
+
+# # ----------------------------------------------------------------------------------------------------------------------
+#     def removeItem(self, item: ChecklistItem) -> bool:
+#         row = item.row()
+#         print('Remove item', row, item.parent)
+#         index = self.createIndex(row, 0, item)
+#         return self.removeRows(row, 1, index.parent())
 
 # ----------------------------------------------------------------------------------------------------------------------
     def load(self, filename: str) -> None:
@@ -305,11 +427,17 @@ class ColumnsModel(QtCore.QAbstractItemModel):
         if len(sections) != 1:
             raise ValueError('Provided file does not follow expected checklist conventions.')
         self.title, body = sections[0].split('\n', 1)
-        self.description, item_text = body.split('\n\n-', 1)
+        try:
+            self.description, item_text = body.split('\n\n-', 1)
+        except ValueError:
+            # A ValueError is thrown if the double-newline fails to match, indicating there is no description in this
+            # file.
+            self.description = ''
+            item_text = body
         item_text = '- ' + item_text.strip() + '\n'
 
         # Generate nested lists of Items from the list under the description.
-        parents: List[TreeItem] = [self.root]
+        parents: List[ChecklistItem] = [self.root]
         indentations = [0]
         items = re.split('^(\s*)-\s+\[(.)\]\s+(.+)\n', item_text, flags=re.MULTILINE)
         for leader, check_text, text in zip(items[1::4], items[2::4], items[3::4]):
@@ -329,15 +457,17 @@ class ColumnsModel(QtCore.QAbstractItemModel):
         # self.dataChanged.emit(self.createIndex(0, 0), self.createIndex(self.root.childCount(), 0))
         self.endResetModel()
 
-    def insertItem(self, parent: TreeItem, text: str = '', checked: bool = False) -> QtCore.QModelIndex:
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def insertItem(self, parent: ChecklistItem, text: str = '', checked: bool = False) -> QtCore.QModelIndex:
         row = parent.childCount()
         index = self.createIndex(row, 0)
         self.beginInsertRows(index, row, row)
-        parent.insertChildren(row, 1)
-        self.endInsertRows()
+        parent.insertChildren(row, 1, 1)
         item = parent.child(row)
-        item.setData(text, QtCore.Qt.DisplayRole)
-        item.setData(QtCore.Qt.Checked if checked else QtCore.Qt.Unchecked, QtCore.Qt.CheckStateRole)
+        item.setData(0, text, QtCore.Qt.DisplayRole)
+        item.setData(0, QtCore.Qt.Checked if checked else QtCore.Qt.Unchecked, QtCore.Qt.CheckStateRole)
+        self.endInsertRows()
         return index
 
 
@@ -359,7 +489,7 @@ class ColumnsModel(QtCore.QAbstractItemModel):
 # ----------------------------------------------------------------------------------------------------------------------
     def dumps(self, settings: Settings) -> str:
         """Return the contents of this document as a sting."""
-        def dump_node(node: TreeItem) -> str:
+        def dump_node(node: ChecklistItem) -> str:
             text = ''
 
             for item in node.children:
@@ -405,7 +535,7 @@ class ColumnsModel(QtCore.QAbstractItemModel):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _repr_recursion(self, item: TreeItem, indent: int = 0) -> str:
+    def _repr_recursion(self, item: ChecklistItem, indent: int = 0) -> str:
         result = " " * indent + repr(item) + "\n"
         for child in item.children:
             result += self._repr_recursion(child, indent + 2)

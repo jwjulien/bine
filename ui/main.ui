@@ -85,8 +85,7 @@
     <addaction name="actionCopy"/>
     <addaction name="actionPaste"/>
     <addaction name="separator"/>
-    <addaction name="actionInsertSibling"/>
-    <addaction name="actionInsertChild"/>
+    <addaction name="actionInsert"/>
     <addaction name="actionDelete"/>
     <addaction name="separator"/>
     <addaction name="actionMoveUp"/>
@@ -94,8 +93,8 @@
     <addaction name="actionIndent"/>
     <addaction name="actionDedent"/>
     <addaction name="separator"/>
-    <addaction name="actionExpandAll"/>
-    <addaction name="actionCollapseAll"/>
+    <addaction name="actionCheckAll"/>
+    <addaction name="actionUncheckAll"/>
    </widget>
    <widget class="QMenu" name="menuExport">
     <property name="title">
@@ -212,9 +211,9 @@
     <string>Print Preview...</string>
    </property>
   </action>
-  <action name="actionInsertSibling">
+  <action name="actionInsert">
    <property name="text">
-    <string>Insert Sibling</string>
+    <string>Insert</string>
    </property>
    <property name="shortcut">
     <string>Ins</string>
@@ -325,20 +324,14 @@
     <string>Ctrl+Shift+Down</string>
    </property>
   </action>
-  <action name="actionExpandAll">
+  <action name="actionCheckAll">
    <property name="text">
-    <string>Expand All</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+.</string>
+    <string>Check All</string>
    </property>
   </action>
-  <action name="actionCollapseAll">
+  <action name="actionUncheckAll">
    <property name="text">
-    <string>Collapse All</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+,</string>
+    <string>Uncheck All</string>
    </property>
   </action>
   <action name="actionUndo">

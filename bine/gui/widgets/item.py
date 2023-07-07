@@ -1,5 +1,5 @@
 # ======================================================================================================================
-#      File:  /bine/main.py
+#      File:  /bine/gui/checklist.py
 #   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
@@ -17,31 +17,39 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
-"""Main GUI application creation point."""
+"""Glorified extension of a QListWidget to represent a single Checklist node from a document."""
 
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
-import sys
+from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
 
-from PySide6 import QtWidgets
-import qdarktheme
+from bine.gui.base.item import Ui_ChecklistItemWidget
+from bine.model.item import ChecklistItem
 
-from bine.gui.main import MainWindow
 
 
 
 
 # ======================================================================================================================
-# Main Function
+# Checklist Item Widget Class
 # ----------------------------------------------------------------------------------------------------------------------
-def main():
-    sys.argv += ['-platform', 'windows:darkmode=1']
-    app = QtWidgets.QApplication(sys.argv)
-    # qdarktheme.setup_theme('auto', 'sharp')
-    window = MainWindow()
-    window.show()
-    return app.exec_()
+class ChecklistItemWidget(QtWidgets.QWidget):
+    """A tree and editor for a single document within a single tab of the GUI window."""
+
+    contentChanged = QtCore.Signal()
+    itemSelected = QtCore.Signal(ChecklistItem)
+
+    def __init__(self, parent: QtWidgets.QWidget, item: ChecklistItem):
+        super().__init__(parent)
+        self.ui = Ui_ChecklistItemWidget()
+        self.ui.setupUi(self)
+
+        self.ui.checkbox.setText(item.text)
+        self.ui.checkbox.setCheckState(QtCore.Qt.Checked if item.checked else QtCore.Qt.Unchecked)
+        self.ui.chevron.setVisible(bool(item.children))
+
+
 
 
 
