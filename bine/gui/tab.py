@@ -24,13 +24,11 @@
 # ----------------------------------------------------------------------------------------------------------------------
 import os
 
-from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
+from PySide6 import QtCore, QtWidgets, QtPrintSupport
 
 from bine.gui.base.tab import Ui_Tab
-from bine.gui.checklist import ChecklistWidget
-from bine.model.item import ChecklistItem
-from bine.model.columns import ColumnsModel
-from bine.libraries.undo.item import CommandItemEdit, CommandItemDelete, CommandItemInsert
+from bine.gui.widgets.checklist import ChecklistWidget
+from bine.model.document import DocumentModel
 
 
 
@@ -42,9 +40,6 @@ class TabWidget(QtWidgets.QWidget):
     """A tree and editor for a single document within a single tab of the GUI window."""
 
     contentChanged = QtCore.Signal()
-    selectionChanged = QtCore.Signal(list)
-    undoTextChanged = QtCore.Signal(str)
-    redoTextChanged = QtCore.Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -53,24 +48,16 @@ class TabWidget(QtWidgets.QWidget):
 
         self.settings = parent.settings
         self.filename = None
-        self.model = ColumnsModel(None)
-        self.undo_stack = QtGui.QUndoStack(self)
+        self.document = DocumentModel()
 
-        self._changed_from_insert = False
+        self.ui.lists_layout = QtWidgets.QHBoxLayout(self.ui.lists)
 
-        if not self.model.description:
-            self.hide_details()
-
-        self.ui.group.toggled.connect(self.toggle_group)
-        self.ui.title.textChanged.connect(self.title_changed)
-        self.ui.description.textChanged.connect(self.description_changed)
-
-        self.undo_stack.undoTextChanged.connect(lambda text: self.undoTextChanged.emit(text))
-        self.undo_stack.redoTextChanged.connect(lambda text: self.redoTextChanged.emit(text))
+        # Connect events.
+        self.ui.group.toggled.connect(self._toggle_details_group)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def toggle_group(self):
+    def _toggle_details_group(self):
         if self.ui.group.isChecked():
             self.show_details()
         else:
@@ -90,32 +77,6 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def warn(self) -> bool:
-        """Warn the user that there are unsaved changes and prompt them to save before continuing.
-
-        Returns:
-            True if the user has acknowledged the unsaved changes and processing should continue of False if the user
-            has cancelled and the caller should cease what it was doing.
-        """
-        # No unsaved changes, nothing to warn about.
-        if not self.model.dirty(self.settings):
-            return True
-
-        # Changes exist, lets prompt the user for an action.
-        flags = QtWidgets.QMessageBox.Discard
-        flags |= QtWidgets.QMessageBox.Save
-        message = 'What would you like to do with your unsaved changes?'
-        result = QtWidgets.QMessageBox.critical(self, 'Unsaved changes', message, flags)
-
-        # If they sad "save" then lets try to save them.
-        if result == QtWidgets.QMessageBox.Save:
-            return self.save()
-
-        # It they said discard then return True indicating the software should proceed anyways.
-        return True
-
-
-# ----------------------------------------------------------------------------------------------------------------------
     def open(self, filename: str):
         """Load the specified document in this tab.
 
@@ -123,28 +84,17 @@ class TabWidget(QtWidgets.QWidget):
             filename: The path to the file to be loaded in this tab.
         """
         self.filename = filename
-        self.model.load(self.filename)
+        self.document.load(self.filename)
 
-        self.ui.title.setText(self.model.title)
-        self.ui.description.setPlainText(self.model.description)
+        self.ui.title.setText(self.document.title)
+        self.ui.description.setPlainText(self.document.description)
 
-        def set_lists(leaf: ChecklistItem) -> None:
-            self.ui.scroller.takeWidget()
-            self.ui.lists = QtWidgets.QWidget()
-            self.ui.container = QtWidgets.QHBoxLayout(self.ui.lists)
-            self.ui.container.setContentsMargins(0, 0, 0, 0)
-            self.ui.scroller.setWidget(self.ui.lists)
+        widget = ChecklistWidget(self, self.document.root)
+        self.ui.lists_layout.addWidget(widget)
 
-            previous = None
-            for item in reversed(leaf.chain):
-                widget = ChecklistWidget(self.ui.lists, item, previous)
-                self.ui.container.insertWidget(0, widget)
-                widget.itemSelected.connect(set_lists)
-                widget.contentChanged.connect(self.contentChanged.emit)
-                previous = item
-
-        # Start by inserting the root list.
-        set_lists(self.model.root)
+        # Hide the description if the document doesn't have one.
+        if not self.document.description:
+            self.hide_details()
 
         self.contentChanged.emit()
 
@@ -159,6 +109,9 @@ class TabWidget(QtWidgets.QWidget):
         Returns:
             Boolean True when the document is saved or False if the user cancelled out of the "save as" dialog.
         """
+        self.document.title = self.ui.title.text()
+        self.document.description = self.ui.description.toPlainText()
+
         if not self.filename:
             # If save was selected but this is a new document and filename hasn't been set then we need to pick a
             # filename now.
@@ -206,29 +159,6 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def title_changed(self) -> None:
-        self.model.title = self.ui.title.text()
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def description_changed(self) -> None:
-        """The user has modified the text in the editor window."""
-        self.model.description = self.ui.description.toPlainText()
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def undo(self):
-        self.undo_stack.undo()
-        self.contentChanged.emit()
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def redo(self):
-        self.undo_stack.redo()
-        self.contentChanged.emit()
-
-
-# ----------------------------------------------------------------------------------------------------------------------
     def context(self, point: QtCore.QPoint):
         """Fires when the context menu is requested for the tree.
 
@@ -239,12 +169,38 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+    def warn(self) -> bool:
+        """Warn the user that there are unsaved changes and prompt them to save before continuing.
+
+        Returns:
+            True if the user has acknowledged the unsaved changes and processing should continue of False if the user
+            has cancelled and the caller should cease what it was doing.
+        """
+        # No unsaved changes, nothing to warn about.
+        if not self.model.dirty(self.settings):
+            return True
+
+        # Changes exist, lets prompt the user for an action.
+        flags = QtWidgets.QMessageBox.Discard
+        flags |= QtWidgets.QMessageBox.Save
+        message = 'What would you like to do with your unsaved changes?'
+        result = QtWidgets.QMessageBox.critical(self, 'Unsaved changes', message, flags)
+
+        # If they sad "save" then lets try to save them.
+        if result == QtWidgets.QMessageBox.Save:
+            return self.save()
+
+        # It they said discard then return True indicating the software should proceed anyways.
+        return True
+
+
+# ----------------------------------------------------------------------------------------------------------------------
     def on_print(self):
         """Print the current document."""
         dialog = QtPrintSupport.QPrintDialog()
         if dialog.exec() == QtWidgets.QDialog.Accepted:
             browser = QtWidgets.QTextEdit()
-            browser.setHtml(self.model.to_html())
+            browser.setHtml(self.document.to_html())
             browser.print_(dialog.printer())
 
 
@@ -252,7 +208,7 @@ class TabWidget(QtWidgets.QWidget):
     def preview(self):
         """Preview the HTML before printing."""
         browser = QtWidgets.QTextEdit()
-        browser.setHtml(self.model.to_html(self.settings))
+        browser.setHtml(self.document.to_html(self.settings))
         dialog = QtPrintSupport.QPrintPreviewDialog()
         dialog.paintRequested.connect(browser.print_)
         dialog.exec()
@@ -274,7 +230,7 @@ class TabWidget(QtWidgets.QWidget):
             def script(filename):
                 with open(os.path.join(assets, 'js', filename), 'r', encoding='utf-8') as handle:
                     return f'<script types="text/javascript">{handle.read()}</script>'
-            document = self.model.to_html(self.settings)
+            document = self.document.to_html(self.settings)
             html = f"""<html>
     <head>
         {style('main.min.css')}

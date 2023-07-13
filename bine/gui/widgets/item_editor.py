@@ -1,8 +1,8 @@
 # ======================================================================================================================
-#      File:  /bine/gui/widgets/item.py
+#      File:  /bine/gui/widgets/item_editor.py
 #   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
-# Copyright:  (c) 2022 Jared Julien, eX Systems
+# Copyright:  (c) 2023 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -17,74 +17,38 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
-"""A custom widget to represent an "item" in a list."""
+"""Extension of the QLineEdit widget fto gain event support."""
 
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from bine.gui.base.item import Ui_ChecklistItemWidget
-from bine.model.item import ItemModel
-
 
 
 
 # ======================================================================================================================
-# Checklist Item Widget Class
+# Item Editor Class
 # ----------------------------------------------------------------------------------------------------------------------
-class ChecklistItemWidget(QtWidgets.QWidget):
-    """A widget that represents a single checklist item."""
-
-    contentChanged = QtCore.Signal()
-
-    def __init__(self, parent: QtWidgets.QWidget, item: ItemModel):
+class ItemEditor(QtWidgets.QLineEdit):
+    doneEditing = QtCore.Signal()
+    def __init__(self, parent):
         super().__init__(parent)
-        self.ui = Ui_ChecklistItemWidget()
-        self.ui.setupUi(self)
-
-        self._item = item
-        self.update()
-
-        self.ui.checkbox.stateChanged.connect(self._checked)
-        self.ui.stack.setCurrentWidget(self.ui.view_mode)
-        self.ui.viewer.doubleClicked.connect(self.edit)
-        self.ui.editor.doneEditing.connect(self.view)
+        self.installEventFilter(self)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _checked(self, state: QtCore.Qt.CheckState) -> None:
-        self._item.checked = state == QtCore.Qt.Checked
-        self.contentChanged.emit()
+    def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
+        self.doneEditing.emit()
+        return super().focusOutEvent(event)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def update(self) -> None:
-        """Update the GUI from the associated item."""
-        self.ui.checkbox.setCheckState(QtCore.Qt.Checked if self._item.checked else QtCore.Qt.Unchecked)
-        self.ui.viewer.setText(self._item.text)
-        self.ui.children.setVisible(bool(self._item.children))
-        self.ui.progress.setValue(self._item.progress)
-        self.ui.count.setText(str(len(self._item.children)))
-
-        self.ui.stack.setCurrentWidget(self.ui.view_mode)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def edit(self) -> None:
-        """Switch to edit mode and show the editor with the current item text."""
-        self.ui.editor.setText(self._item.text)
-        self.ui.editor.setCursorPosition(len(self._item.text))
-        self.ui.stack.setCurrentWidget(self.ui.edit_mode)
-        self.ui.editor.setFocus()
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def view(self) -> None:
-        """Switch to view mode and store the state of the editor back to the item and the viewer."""
-        self._item.text = self.ui.editor.text()
-        self.contentChanged.emit()
-        self.update()
+    def eventFilter(self, widget: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if widget is self and event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Return:
+            self.doneEditing.emit()
+            return True
+        return False
 
 
 

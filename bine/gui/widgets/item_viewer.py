@@ -1,8 +1,8 @@
 # ======================================================================================================================
-#      File:  /bine/gui/__init__.py
+#      File:  /bine/gui/widgets/item_viewer.py
 #   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
-# Copyright:  (c) 2022 Jared Julien, eX Systems
+# Copyright:  (c) 2023 Jared Julien, eX Systems
 # ---------------------------------------------------------------------------------------------------------------------
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -17,6 +17,24 @@
 # OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ----------------------------------------------------------------------------------------------------------------------
+"""An extension of the QLabel class that can be used for viewing checklist items."""
+
+# ======================================================================================================================
+# Imports
+# ----------------------------------------------------------------------------------------------------------------------
+from PySide6 import QtCore, QtGui, QtWidgets
+
+
+
+
+# ======================================================================================================================
+# Viewer Label Class
+# ----------------------------------------------------------------------------------------------------------------------
+class ViewerLabel(QtWidgets.QLabel):
+    doubleClicked = QtCore.Signal()
+
+    def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent) -> None:
+        self.doubleClicked.emit()
 
 
 

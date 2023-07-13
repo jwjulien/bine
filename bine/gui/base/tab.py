@@ -25,7 +25,7 @@ class Ui_Tab(object):
     def setupUi(self, Tab):
         if not Tab.objectName():
             Tab.setObjectName(u"Tab")
-        Tab.resize(817, 531)
+        Tab.resize(817, 577)
         self.verticalLayout_2 = QVBoxLayout(Tab)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.group = QGroupBox(Tab)
@@ -69,7 +69,7 @@ class Ui_Tab(object):
         self.scroller.setWidgetResizable(True)
         self.container = QWidget()
         self.container.setObjectName(u"container")
-        self.container.setGeometry(QRect(0, 0, 797, 378))
+        self.container.setGeometry(QRect(0, 0, 797, 413))
         self.horizontalLayout = QHBoxLayout(self.container)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)

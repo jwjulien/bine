@@ -23,6 +23,7 @@
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
 from importlib import metadata
+from datetime import datetime
 import os
 from typing import List
 import ctypes
@@ -31,7 +32,7 @@ from PySide6 import QtGui, QtWidgets
 
 from bine.gui.base.main import Ui_MainWindow
 from bine.gui.tab import TabWidget
-from bine.model.item import ChecklistItem
+from bine.model.item import ItemModel
 from bine.settings import Settings
 
 
@@ -76,8 +77,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionPreview.triggered.connect(lambda: self.ui.tabs.currentWidget().preview())
         self.ui.actionCloseTab.triggered.connect(lambda: self.close_tab(self.ui.tabs.currentIndex()))
         self.ui.actionExit.triggered.connect(self.close)
-        self.ui.actionUndo.triggered.connect(lambda: self.ui.tabs.currentWidget().undo())
-        self.ui.actionRedo.triggered.connect(lambda: self.ui.tabs.currentWidget().redo())
+        # self.ui.actionUndo.triggered.connect(lambda: self.ui.tabs.currentWidget().undo())
+        # self.ui.actionRedo.triggered.connect(lambda: self.ui.tabs.currentWidget().redo())
         self.ui.actionCut.triggered.connect(lambda: self.ui.tabs.currentWidget().cut())
         self.ui.actionCopy.triggered.connect(lambda: self.ui.tabs.currentWidget().copy())
         self.ui.actionPaste.triggered.connect(lambda: self.ui.tabs.currentWidget().paste())
@@ -184,8 +185,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for idx in range(self.ui.tabs.count()):
             self.ui.tabs.setCurrentIndex(idx)
-            tab = self.ui.tabs.widget(idx)
-            if tab.model.dirty(self.settings):
+            tab: TabWidget = self.ui.tabs.widget(idx)
+            if tab.document.dirty(self.settings):
                 if yes_all:
                     # Once the user selected "Yes to All" then we can plow through the remainder and just assume save.
                     result = QtWidgets.QMessageBox.Save
@@ -243,13 +244,13 @@ class MainWindow(QtWidgets.QMainWindow):
             """Connected to the contentChanged event of the new tab to update the tab title when the user changes the
             contents.
             """
-            dirty = '*' if tab.model.dirty(self.settings) else ''
+            dirty = '*' if tab.document.dirty(self.settings) else ''
             filename = os.path.splitext(os.path.basename(tab.filename))[0] if tab.filename else 'untitled'
             index = self.ui.tabs.indexOf(tab)
             self.ui.tabs.setTabText(index, f'{dirty}{filename}')
             self.ui.tabs.setTabToolTip(index, os.path.abspath(tab.filename) if tab.filename else '')
 
-        def selection_changed(selection: List[ChecklistItem]) -> None:
+        def selection_changed(selection: List[ItemModel]) -> None:
             """Connected to the tree selection changes in the tab.
 
             Adjusts the availability of the options in the edit menu according to the new selection.
@@ -261,10 +262,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.actionIndent.setEnabled(all(item.childNumber() != 0 for item in selection))
             self.ui.actionDedent.setEnabled(all(item.level > 1 for item in selection))
 
-        tab.selectionChanged.connect(selection_changed)
+        # tab.selectionChanged.connect(selection_changed)
         tab.contentChanged.connect(content_changed)
-        tab.undoTextChanged.connect(lambda text: self.ui.actionUndo.setStatusTip('Undo ' + text))
-        tab.redoTextChanged.connect(lambda text: self.ui.actionRedo.setStatusTip('Redo ' + text))
+        # tab.undoTextChanged.connect(lambda text: self.ui.actionUndo.setStatusTip('Undo ' + text))
+        # tab.redoTextChanged.connect(lambda text: self.ui.actionRedo.setStatusTip('Redo ' + text))
 
         return tab
 
@@ -286,10 +287,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def about(self):
         """Show an about dialog with information about this tool."""
         title = 'About Bine Markdown Checklist Editor'
-        description = importlib.metadata.metadata('bine')['Summary'] + '\n\n'
-        description += 'Author: ' + importlib.metadata.metadata('bine')['Author']
-        description += ' <' + importlib.metadata.metadata('bine')['Author-email'] + '>\n'
-        description += 'Copyright: (c) 2022 ' + importlib.metadata.metadata('bine')['Author']
+        description = metadata.metadata('bine')['Summary'] + '\n\n'
+        description += 'Author: ' + metadata.metadata('bine')['Author']
+        description += ' <' + metadata.metadata('bine')['Author-email'] + '>\n'
+        description += f"Copyright: (c) 2022-{datetime.now().strftime('%Y')} " + metadata.metadata('bine')['Author']
         QtWidgets.QMessageBox.about(self, title, description)
 
 

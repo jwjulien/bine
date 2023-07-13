@@ -1,5 +1,5 @@
 # ======================================================================================================================
-#      File:  /bine/gui/checklist.py
+#      File:  /bine/gui/widgets/checklist.py
 #   Project:  Bine
 #    Author:  Jared Julien <jaredjulien@exsystems.net>
 # Copyright:  (c) 2022 Jared Julien, eX Systems
@@ -23,13 +23,12 @@
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
 import os
-from typing import List
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from bine.gui.base.checklist import Ui_ChecklistWidget
 from bine.gui.widgets.item import ChecklistItemWidget
-from bine.model.item import ChecklistItem
+from bine.model.item import ItemModel
 
 
 
@@ -39,63 +38,66 @@ from bine.model.item import ChecklistItem
 # Checklist Widget Class
 # ----------------------------------------------------------------------------------------------------------------------
 class ChecklistWidget(QtWidgets.QWidget):
-    """A tree and editor for a single document within a single tab of the GUI window."""
+    """A widget that contains a QListWidget of ItemModel objects to be used in a column view."""
 
     contentChanged = QtCore.Signal()
-    itemSelected = QtCore.Signal(ChecklistItem)
+    itemSelected = QtCore.Signal(ItemModel)
 
-    def __init__(self, parent: QtWidgets.QWidget, list: ChecklistItem, selected: ChecklistItem = None):
+    def __init__(self, parent: QtWidgets.QWidget, list: ItemModel):
         super().__init__(parent)
         self.ui = Ui_ChecklistWidget()
         self.ui.setupUi(self)
 
         self._mouse_position: QtCore.QPoint = None
 
-        self._list: ChecklistItem = list
-        for child in self._list.children:
-            widget = self._make_widget(child)
-            self.ui.list.addItem(widget)
-            if child == selected:
-                self.ui.list.setCurrentItem(widget)
+        self._list = list
+        for child in list.children:
+            item = QtWidgets.QListWidgetItem(self.ui.items)
+            widget = ChecklistItemWidget(None, child)
+            def changed():
+                widget.update()
+                self.contentChanged.emit()
+            widget.contentChanged.connect(changed)
+            self.ui.items.addItem(item)
+            self.ui.items.setItemWidget(item, widget)
+
+            list_widget = ChecklistWidget(self.ui.children, child)
+            self.ui.children.addWidget(list_widget)
+            widget.contentChanged.connect(lambda: self.contentChanged.emit())
+
+        self.ui.children.setVisible(False)
 
         self.popmenu = QtWidgets.QMenu(self)
         self.popmenu_insert = QtGui.QAction('Insert', self)
         self.popmenu.addAction(self.popmenu_insert)
         self.popmenu_delete = QtGui.QAction('Delete', self)
-        self.popmenu_delete.setEnabled(bool(selected))
+        # self.popmenu_delete.setEnabled(bool(selected))
         self.popmenu.addAction(self.popmenu_delete)
         self.popmenu_insert.triggered.connect(self.insert)
         self.popmenu_delete.triggered.connect(self.delete)
-        self.ui.list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.ui.list.customContextMenuRequested.connect(lambda p: self.popmenu.exec(self.ui.list.mapToGlobal(p)))
-        self.ui.list.currentItemChanged.connect(self._item_selected)
-        self.ui.list.itemChanged.connect(self._item_changed)
-        self.ui.list.itemSelectionChanged.connect(self._selection_changed)
+
+        # self.ui.items.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        # self.ui.items.customContextMenuRequested.connect(lambda p: self.popmenu.exec(self.ui.items.mapToGlobal(p)))
+        # self.ui.items.currentItemChanged.connect(self._item_selected)
+        # self.ui.items.itemChanged.connect(self._item_changed)
+        self.ui.items.itemSelectionChanged.connect(self._selection_changed)
 
         # Connect every event and print info for testing.
-        # self.ui.list.currentItemChanged.connect(lambda current, previous: print('Current item changed:', current, previous))
-        # self.ui.list.currentRowChanged.connect(lambda row: print('Current row changed:', row))
-        # self.ui.list.currentTextChanged.connect(lambda text: print('Current text changed:', text))
-        # self.ui.list.itemActivated.connect(lambda item: print('Activated:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.list.itemChanged.connect(lambda item: print('Changed:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.list.itemClicked.connect(lambda item: print('Clicked:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.list.itemDoubleClicked.connect(lambda item: print('Double Clicked:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.list.itemEntered.connect(lambda item: print('Entered:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.list.itemPressed.connect(lambda item: print('Pressed:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.list.itemSelectionChanged.connect(lambda: print('Selection Changed'))
+        # self.ui.items.currentItemChanged.connect(lambda current, previous: print('Current item changed:', current, previous))
+        # self.ui.items.currentRowChanged.connect(lambda row: print('Current row changed:', row))
+        # self.ui.items.currentTextChanged.connect(lambda text: print('Current text changed:', text))
+        # self.ui.items.itemActivated.connect(lambda item: print('Activated:', item.data(QtCore.Qt.UserRole)))
+        # self.ui.items.itemChanged.connect(lambda item: print('Changed:', item.data(QtCore.Qt.UserRole)))
+        # self.ui.items.itemClicked.connect(lambda item: print('Clicked:', item.data(QtCore.Qt.UserRole)))
+        # self.ui.items.itemDoubleClicked.connect(lambda item: print('Double Clicked:', item.data(QtCore.Qt.UserRole)))
+        # self.ui.items.itemEntered.connect(lambda item: print('Entered:', item.data(QtCore.Qt.UserRole)))
+        # self.ui.items.itemPressed.connect(lambda item: print('Pressed:', item.data(QtCore.Qt.UserRole)))
+        # self.ui.items.itemSelectionChanged.connect(lambda: print('Selection Changed'))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _make_widget(self, item: ChecklistItem) -> QtWidgets.QListWidgetItem:
-        widget: QtWidgets.QListWidgetItem = QtWidgets.QListWidgetItem(item.text)
-        widget.setFlags(widget.flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsUserCheckable)
-        widget.setCheckState(QtCore.Qt.Checked if item.checked else QtCore.Qt.Unchecked)
-        widget.setData(QtCore.Qt.UserRole, item)
-
-        icon = QtGui.QPixmap(os.path.join('bine', 'assets', 'icons', 'chevron-right-50.png'))
-
-        self.ui.list.setItemWidget(widget, ChecklistItemWidget(None, item))
-        return widget
+    def _make_widget(self, item: ItemModel) -> QtWidgets.QListWidgetItem:
+        return ChecklistItemWidget(self, item)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -106,22 +108,29 @@ class ChecklistWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _item_changed(self, widget: QtWidgets.QListWidgetItem) -> None:
-        item = widget.data(QtCore.Qt.UserRole)
-        print('Changed:', item)
-        if item is None:
-            return
-        item.text = widget.text()
-        item.checked = widget.checkState() == QtCore.Qt.Checked
-        self.contentChanged.emit()
-        # TODO: Remove empty items from the list.
+    # def _item_changed(self, widget: QtWidgets.QListWidgetItem) -> None:
+    #     item = widget.data(QtCore.Qt.UserRole)
+    #     print('Changed:', item)
+    #     if item is None:
+    #         return
+    #     item.text = widget.text()
+    #     item.checked = widget.checkState() == QtCore.Qt.Checked
+    #     self.contentChanged.emit()
+    #     # TODO: Remove empty items from the list.
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def _selection_changed(self):
-        selected = self.ui.list.selectedIndexes()
+        selected = self.ui.items.selectedIndexes()
         self.popmenu_delete.setEnabled(len(selected) == 1)
-        print('Selection changed:', selected)
+        if selected:
+            item = selected[0]
+            print('Selection changed:', item)
+            self.ui.children.setCurrentIndex(item.row())
+            self.ui.children.setVisible(True)
+        else:
+            self.ui.children.setVisible(False)
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -130,24 +139,24 @@ class ChecklistWidget(QtWidgets.QWidget):
 
         If no item in the list is currently selected then insert a new item at the end of the list.
         """
-        indexes = self.ui.list.selectedIndexes()
+        indexes = self.ui.items.selectedIndexes()
         row = indexes[-1].row() if len(indexes) > 0 else self._list.childCount()
 
-        item = ChecklistItem(self._list)
+        item = ItemModel(self._list)
         self._list.children.insert(row, item)
 
         widget = self._make_widget(item)
-        self.ui.list.insertItem(row, widget)
-        self.ui.list.editItem(widget)
+        self.ui.items.insertItem(row, widget)
+        self.ui.items.editItem(widget)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def delete(self):
         """Fires to delete the currently selected item from the list."""
-        indexes = self.ui.list.selectedIndexes()
+        indexes = self.ui.items.selectedIndexes()
         row = indexes[-1].row() if len(indexes) > 0 else self._list.childCount()
         print('Delete row', row)
-        self.ui.list.takeItem(row)
+        self.ui.items.takeItem(row)
         self._list.children.pop(row)
         self.contentChanged.emit()
         self.itemSelected.emit(self._list)
@@ -186,7 +195,7 @@ class ChecklistWidget(QtWidgets.QWidget):
 #         if not selection:
 #             return
 #         for node in selection:
-#             item: ChecklistItem = node.data(0, QtCore.Qt.UserRole)
+#             item: ItemModel = node.data(0, QtCore.Qt.UserRole)
 #             index = item.row()
 #             if index < (len(item.parent.children) - 1):
 #                 item.parent.children.pop(index)
@@ -214,16 +223,16 @@ class ChecklistWidget(QtWidgets.QWidget):
 #         top = selection[0]
 #         parent = top.parent()
 #         if parent:
-#             parent_item: ChecklistItem = parent.data(0, QtCore.Qt.UserRole)
+#             parent_item: ItemModel = parent.data(0, QtCore.Qt.UserRole)
 #             above = parent.child(parent.indexOfChild(top) - 1)
 #         else:
-#             parent_item: ChecklistItem = self.model.root
+#             parent_item: ItemModel = self.model.root
 #             above = self.ui.columns.topLevelItem(self.ui.columns.indexOfTopLevelItem(top) - 1)
-#         above_item: ChecklistItem = above.data(0, QtCore.Qt.UserRole)
+#         above_item: ItemModel = above.data(0, QtCore.Qt.UserRole)
 
 #         for node in selection:
 #             # Move the item in the model.
-#             item: ChecklistItem = node.data(0, QtCore.Qt.UserRole)
+#             item: ItemModel = node.data(0, QtCore.Qt.UserRole)
 #             parent_item.children.pop(item.row())
 #             above_item.children.append(item)
 #             item.parent = above_item
@@ -247,7 +256,7 @@ class ChecklistWidget(QtWidgets.QWidget):
 #         if not selection:
 #             return
 #         for node in selection:
-#             item: ChecklistItem = node.data(0, QtCore.Qt.UserRole)
+#             item: ItemModel = node.data(0, QtCore.Qt.UserRole)
 #             if item.parent.parent:
 #                 # Move the node in the model.
 #                 item.parent.children.pop(item.row())
