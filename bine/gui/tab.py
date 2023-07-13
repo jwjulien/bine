@@ -117,7 +117,7 @@ class TabWidget(QtWidgets.QWidget):
             # filename now.
             return self.save_as()
 
-        self.model.dump(self.filename, settings=self.settings, update_cache=True)
+        self.document.dump(self.filename, settings=self.settings, update_cache=True)
         self.contentChanged.emit()
         return True
 

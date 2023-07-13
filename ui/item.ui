@@ -48,7 +48,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="view_mode">
       <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -169,12 +169,12 @@
   <customwidget>
    <class>ViewerLabel</class>
    <extends>QLabel</extends>
-   <header>bine.gui.widgets.item_viewer</header>
+   <header>bine.gui.widgets.item.viewer</header>
   </customwidget>
   <customwidget>
    <class>ItemEditor</class>
    <extends>QLineEdit</extends>
-   <header>bine.gui.widgets.item_editor</header>
+   <header>bine.gui.widgets.item.editor</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -22,14 +22,11 @@
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
-import os
-
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from bine.gui.base.checklist import Ui_ChecklistWidget
-from bine.gui.widgets.item import ChecklistItemWidget
+from bine.gui.widgets.item.item import ChecklistItemWidget
 from bine.model.item import ItemModel
-
 
 
 
@@ -53,6 +50,7 @@ class ChecklistWidget(QtWidgets.QWidget):
         self._list = list
         for child in list.children:
             item = QtWidgets.QListWidgetItem(self.ui.items)
+            item.setData(QtCore.Qt.UserRole, child)
             widget = ChecklistItemWidget(None, child)
             def changed():
                 widget.update()
@@ -61,6 +59,7 @@ class ChecklistWidget(QtWidgets.QWidget):
             self.ui.items.addItem(item)
             self.ui.items.setItemWidget(item, widget)
 
+            # Recursively add children items to the children stack.
             list_widget = ChecklistWidget(self.ui.children, child)
             self.ui.children.addWidget(list_widget)
             widget.contentChanged.connect(lambda: self.contentChanged.emit())
@@ -81,6 +80,7 @@ class ChecklistWidget(QtWidgets.QWidget):
         # self.ui.items.currentItemChanged.connect(self._item_selected)
         # self.ui.items.itemChanged.connect(self._item_changed)
         self.ui.items.itemSelectionChanged.connect(self._selection_changed)
+        self.ui.items.dropEvent = self.dropEvent
 
         # Connect every event and print info for testing.
         # self.ui.items.currentItemChanged.connect(lambda current, previous: print('Current item changed:', current, previous))
@@ -93,6 +93,18 @@ class ChecklistWidget(QtWidgets.QWidget):
         # self.ui.items.itemEntered.connect(lambda item: print('Entered:', item.data(QtCore.Qt.UserRole)))
         # self.ui.items.itemPressed.connect(lambda item: print('Pressed:', item.data(QtCore.Qt.UserRole)))
         # self.ui.items.itemSelectionChanged.connect(lambda: print('Selection Changed'))
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def dropEvent(self, event: QtGui.QDropEvent) -> None:
+        QtWidgets.QListWidget.dropEvent(self.ui.items, event)
+        def get_index(item: ItemModel) -> int:
+            for index in range(self.ui.items.count()):
+                widget = self.ui.items.item(index)
+                if widget.data(QtCore.Qt.UserRole) is item:
+                    return index
+            return None
+        self._list.children.sort(key=get_index)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

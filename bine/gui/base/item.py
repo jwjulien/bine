@@ -18,8 +18,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QCheckBox, QHBoxLayout, QLabel,
     QProgressBar, QSizePolicy, QStackedWidget, QWidget)
 
-from bine.gui.widgets.item_editor import ItemEditor
-from bine.gui.widgets.item_viewer import ViewerLabel
+from bine.gui.widgets.item.editor import ItemEditor
+from bine.gui.widgets.item.viewer import ViewerLabel
 
 class Ui_ChecklistItemWidget(object):
     def setupUi(self, ChecklistItemWidget):
@@ -113,7 +113,7 @@ class Ui_ChecklistItemWidget(object):
 
         self.retranslateUi(ChecklistItemWidget)
 
-        self.stack.setCurrentIndex(1)
+        self.stack.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(ChecklistItemWidget)

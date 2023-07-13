@@ -15,8 +15,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QListWidget, QListWidgetItem,
-    QSizePolicy, QStackedWidget, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QHBoxLayout, QListWidget,
+    QListWidgetItem, QSizePolicy, QStackedWidget, QWidget)
 
 class Ui_ChecklistWidget(object):
     def setupUi(self, ChecklistWidget):
@@ -33,6 +33,9 @@ class Ui_ChecklistWidget(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.items.sizePolicy().hasHeightForWidth())
         self.items.setSizePolicy(sizePolicy)
+        self.items.setDragDropMode(QAbstractItemView.InternalMove)
+        self.items.setDefaultDropAction(Qt.MoveAction)
+        self.items.setAlternatingRowColors(True)
 
         self.horizontalLayout.addWidget(self.items)
 
