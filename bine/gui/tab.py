@@ -192,6 +192,12 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+    def cut(self) -> None:
+        self.copy()
+        self.delete()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
     def copy(self) -> None:
         """Copy the currently selected item and it's children both as plain text and as binary (for internal use)."""
         widget = self.ui.lists.get_selected_leaf_item()
