@@ -207,20 +207,39 @@ class TabWidget(QtWidgets.QWidget):
     def paste(self) -> None:
         mime_data = self.clipboard.mimeData()
         selected = self.ui.lists.get_selected_leaf_item()
+        parent = selected.item()
 
         # First, see if there is any custom data to be pasted (copied to clipboard already from Bine).
         data = mime_data.data('application/vnd-bine-item')
         if data:
-            item = pickle.loads(data)
-            # selected.
-            # self.update()
-            print(selected.item().text)
+            try:
+                item = pickle.loads(data)
+            except pickle.UnpicklingError:
+                return
+
+            # Successfully unpickled - insert the item and correct the part/child double linkage.
+            item.parent = parent
+            parent.children.append(item)
+            selected.insert(item)
+            self.contentChanged.emit()
+
+        # Otherwise, fall back on trying to do something with plain text.
+        else:
+            text = mime_data.text()
+            if text:
+                for text in text.split('\n'):
+                    item = ItemModel(parent, text.strip())
+                    parent.children.append(item)
+                    selected.insert(item)
+                self.contentChanged.emit()
+
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def insert(self) -> None:
         selected = self.ui.lists.get_selected_leaf_item()
-        selected.insert()
+        selected.add()
 
 
 # ----------------------------------------------------------------------------------------------------------------------

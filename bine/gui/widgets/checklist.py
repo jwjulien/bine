@@ -56,7 +56,7 @@ class ChecklistWidget(QtWidgets.QWidget):
         self.popmenu_delete = QtGui.QAction('Delete', self)
         # self.popmenu_delete.setEnabled(bool(selected))
         self.popmenu.addAction(self.popmenu_delete)
-        self.popmenu_insert.triggered.connect(self.insert)
+        self.popmenu_insert.triggered.connect(self.add)
         self.popmenu_delete.triggered.connect(self.delete)
 
         self.ui.items.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -74,7 +74,7 @@ class ChecklistWidget(QtWidgets.QWidget):
     def set_item_model(self, list: ItemModel):
         self._list = list
         for child in list.children:
-            self._insert_item(child)
+            self.insert(child)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -148,15 +148,15 @@ class ChecklistWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def insert(self):
+    def add(self):
         item = ItemModel(self._list)
         self._list.children.append(item)
-        self._insert_item(item)
+        self.insert(item)
         item.item_widget.edit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _insert_item(self, item: ItemModel):
+    def insert(self, item: ItemModel):
         """Called to insert a new item into the list at the current selected location.
 
         If no item in the list is currently selected then insert a new item at the end of the list.
