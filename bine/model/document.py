@@ -75,16 +75,20 @@ class DocumentModel:
             # A ValueError is thrown if no description was provided - default to empty string.
             self.description = ''
             item_text = body
-        # The leading dash and trailing newline got stripped by re, hack them back for the parsing below.
-        item_text = '- ' + item_text.strip() + '\n'
+        else:
+            # The leading dash and trailing newline got stripped by re, hack them back for the parsing below.
+            item_text = '- ' + item_text.strip() + '\n'
 
         # Generate nested List of Items from the list under the description.
         parents: List[ItemModel] = [self.root]
         indentations = [0]
-        items = re.split('^(\s*)[-*]\s+\[(.)\]\s+(.+)\n', item_text, flags=re.MULTILINE)
-        # TODO: What about list items that are missing checkboxes?
+        items = re.split('^([ \t]*)[-*][ \t]*(?:\[(.)\])?[ \t]*(.*?)$', item_text, flags=re.MULTILINE)
         for leader, check_text, text in zip(items[1::4], items[2::4], items[3::4]):
             indent = len(leader)
+
+            # Skip empty items.
+            if not text:
+                continue
 
             # Decide if we need to change levels.
             if indent > indentations[-1]:
@@ -106,7 +110,7 @@ class DocumentModel:
             parent = parents[-1]
 
             # Insert the item.
-            checked = bool(check_text != ' ')
+            checked = bool(check_text is not None and check_text != ' ')
             parent.children.append(ItemModel(parent, text, checked))
 
 
@@ -131,8 +135,9 @@ class DocumentModel:
         """Return the contents of this document as a sting."""
         text = self.title + '\n'
         text += ('=' * 120) + '\n'
-        text += self.description
-        text += '\n\n'
+        if self.description:
+            text += self.description
+            text += '\n\n'
         for child in self.root.children:
             text += child.dump()
         return text

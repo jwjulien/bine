@@ -102,6 +102,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # TODO: What about remembering files that were open last session and reopening them?
 
+        # Open tabs for each of the (optional) command line file arguments.
         for file in files:
             tab = self.new()
             tab.open(file)
