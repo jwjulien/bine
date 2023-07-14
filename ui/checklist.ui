@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>622</width>
-    <height>691</height>
+    <height>360</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,12 +28,6 @@
    </property>
    <item>
     <widget class="QListWidget" name="items">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>1</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
      <property name="dragDropMode">
       <enum>QAbstractItemView::InternalMove</enum>
      </property>
@@ -46,14 +40,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QStackedWidget" name="children">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-       <horstretch>1</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-    </widget>
+    <widget class="QStackedWidget" name="children"/>
    </item>
   </layout>
  </widget>

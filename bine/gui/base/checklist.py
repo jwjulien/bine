@@ -22,17 +22,12 @@ class Ui_ChecklistWidget(object):
     def setupUi(self, ChecklistWidget):
         if not ChecklistWidget.objectName():
             ChecklistWidget.setObjectName(u"ChecklistWidget")
-        ChecklistWidget.resize(622, 691)
+        ChecklistWidget.resize(622, 360)
         self.horizontalLayout = QHBoxLayout(ChecklistWidget)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.items = QListWidget(ChecklistWidget)
         self.items.setObjectName(u"items")
-        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(1)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.items.sizePolicy().hasHeightForWidth())
-        self.items.setSizePolicy(sizePolicy)
         self.items.setDragDropMode(QAbstractItemView.InternalMove)
         self.items.setDefaultDropAction(Qt.MoveAction)
         self.items.setAlternatingRowColors(True)
@@ -41,11 +36,6 @@ class Ui_ChecklistWidget(object):
 
         self.children = QStackedWidget(ChecklistWidget)
         self.children.setObjectName(u"children")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        sizePolicy1.setHorizontalStretch(1)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.children.sizePolicy().hasHeightForWidth())
-        self.children.setSizePolicy(sizePolicy1)
 
         self.horizontalLayout.addWidget(self.children)
 

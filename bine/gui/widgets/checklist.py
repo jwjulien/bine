@@ -183,10 +183,14 @@ class ChecklistWidget(QtWidgets.QWidget):
         item_widget.contentChanged.connect(lambda: self.contentChanged.emit())
 
         # Recursively add children items to the children stack.
-        list_widget = ChecklistWidget(self.ui.children)
+        list_widget = ChecklistWidget(self)
         list_widget.set_item_model(item)
         list_widget.contentChanged.connect(lambda: self.contentChanged.emit())
         self.ui.children.addWidget(list_widget)
+
+        size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        size_policy.setHorizontalStretch(item.level)
+        list_widget.setSizePolicy(size_policy)
 
         return item_widget
 
