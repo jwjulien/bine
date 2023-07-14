@@ -16,8 +16,9 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QApplication, QMainWindow, QMenu, QMenuBar,
-    QSizePolicy, QStatusBar, QTabWidget, QVBoxLayout,
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QMainWindow,
+    QMenu, QMenuBar, QSizePolicy, QSpacerItem,
+    QStackedWidget, QStatusBar, QTabWidget, QVBoxLayout,
     QWidget)
 
 class Ui_MainWindow(object):
@@ -100,15 +101,57 @@ class Ui_MainWindow(object):
         self.actionEdit.setEnabled(False)
         self.main = QWidget(MainWindow)
         self.main.setObjectName(u"main")
-        self.verticalLayout = QVBoxLayout(self.main)
+        self.verticalLayout_2 = QVBoxLayout(self.main)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setContentsMargins(3, 3, 3, 3)
+        self.stack = QStackedWidget(self.main)
+        self.stack.setObjectName(u"stack")
+        self.placeholder_page = QWidget()
+        self.placeholder_page.setObjectName(u"placeholder_page")
+        self.verticalLayout_3 = QVBoxLayout(self.placeholder_page)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalSpacer = QSpacerItem(20, 236, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        self.verticalLayout_3.addItem(self.verticalSpacer)
+
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
+
+        self.placeholder = QLabel(self.placeholder_page)
+        self.placeholder.setObjectName(u"placeholder")
+
+        self.horizontalLayout.addWidget(self.placeholder)
+
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer_2)
+
+
+        self.verticalLayout_3.addLayout(self.horizontalLayout)
+
+        self.verticalSpacer_2 = QSpacerItem(20, 236, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        self.verticalLayout_3.addItem(self.verticalSpacer_2)
+
+        self.stack.addWidget(self.placeholder_page)
+        self.tabs_page = QWidget()
+        self.tabs_page.setObjectName(u"tabs_page")
+        self.verticalLayout = QVBoxLayout(self.tabs_page)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.tabs = QTabWidget(self.main)
+        self.tabs = QTabWidget(self.tabs_page)
         self.tabs.setObjectName(u"tabs")
         self.tabs.setTabsClosable(True)
         self.tabs.setMovable(True)
 
         self.verticalLayout.addWidget(self.tabs)
+
+        self.stack.addWidget(self.tabs_page)
+
+        self.verticalLayout_2.addWidget(self.stack)
 
         MainWindow.setCentralWidget(self.main)
         self.menubar = QMenuBar(MainWindow)
@@ -275,6 +318,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(shortcut)
         self.actionEdit.setShortcut(QCoreApplication.translate("MainWindow", u"F2", None))
 #endif // QT_CONFIG(shortcut)
+        self.placeholder.setText(QCoreApplication.translate("MainWindow", u"To get started, create a new tab or open a document.", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"Help", None))
         self.menuEdit.setTitle(QCoreApplication.translate("MainWindow", u"Edit", None))

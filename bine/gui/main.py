@@ -145,6 +145,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # If this was the last tab manually fire the change event to disable actions.
                 if self.ui.tabs.count() == 0:
                     self.tab_changed(None)
+                    self.ui.stack.setCurrentWidget(self.ui.placeholder_page)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -239,6 +240,8 @@ class MainWindow(QtWidgets.QMainWindow):
         Returns:
             The newly created TabWidget instance, primarily intended for the open method to load a document.
         """
+        self.ui.stack.setCurrentWidget(self.ui.tabs_page)
+
         tab = TabWidget(self)
         self.ui.tabs.addTab(tab, 'untitled')
         self.ui.tabs.setCurrentWidget(tab)
