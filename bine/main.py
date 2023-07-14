@@ -23,6 +23,9 @@
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
 import sys
+import logging
+from importlib import metadata
+from argparse import ArgumentParser
 
 from PySide6 import QtWidgets
 import qdarktheme
@@ -36,11 +39,25 @@ from bine.gui.main import MainWindow
 # Main Function
 # ----------------------------------------------------------------------------------------------------------------------
 def main():
+    # Setup command line inputs.
+    parser = ArgumentParser(description=metadata.metadata('bine')['Summary'])
+    parser.add_argument('files', nargs='*', help='optional file(s) to open in tabs')
+    parser.add_argument('-v', '--verbose', action='count', default=0, help='increase verbosity of terminal output')
+    args = parser.parse_args()
+
+    # Configure logging output.
+    levels = [logging.WARNING, logging.INFO, logging.DEBUG]
+    level = levels[min(2, args.verbose)]
+    logging.basicConfig(level=level)
+
+    # Setup GUI window.
     sys.argv += ['-platform', 'windows:darkmode=1']
     app = QtWidgets.QApplication(sys.argv)
     # qdarktheme.setup_theme('auto', 'sharp')
-    window = MainWindow()
+    window = MainWindow(args.files)
     window.show()
+
+    # Run the app.
     return app.exec_()
 
 

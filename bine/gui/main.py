@@ -22,11 +22,11 @@
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
+import os
+import ctypes
+from typing import List
 from importlib import metadata
 from datetime import datetime
-import os
-from typing import List
-import ctypes
 
 from PySide6 import QtGui, QtWidgets
 
@@ -44,8 +44,8 @@ from bine.settings import Settings
 class MainWindow(QtWidgets.QMainWindow):
     """Extends the generated Qt MainWindow UI to add functionality for the main tool window."""
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, files: List[str]):
+        super().__init__(None)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -102,9 +102,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # TODO: What about remembering files that were open last session and reopening them?
 
-        # TODO: This is just for testing - I'm sick of opening a file every single time I relaunch the app.
-        tab = self.new()
-        tab.open('nested.md')
+        for file in files:
+            tab = self.new()
+            tab.open(file)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
