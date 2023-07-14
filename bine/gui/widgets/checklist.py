@@ -40,11 +40,12 @@ class ChecklistWidget(QtWidgets.QWidget):
     contentChanged = QtCore.Signal()
     itemSelected = QtCore.Signal(ItemModel)
 
-    def __init__(self, parent: QtWidgets.QWidget):
+    def __init__(self, parent: QtWidgets.QWidget, parent_widget: 'ChecklistWidget' = None):
         super().__init__(parent)
         self.ui = Ui_ChecklistWidget()
         self.ui.setupUi(self)
 
+        self._parent_widget = parent_widget
         self._mouse_position: QtCore.QPoint = None
         self._list: ItemModel = None
 
@@ -63,6 +64,7 @@ class ChecklistWidget(QtWidgets.QWidget):
         self.ui.items.customContextMenuRequested.connect(lambda p: self.popmenu.exec(self.ui.items.mapToGlobal(p)))
         self.ui.items.itemSelectionChanged.connect(self._selection_changed)
         self.ui.items.dropEvent = self.dropEvent
+        self.installEventFilter(self)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -75,6 +77,35 @@ class ChecklistWidget(QtWidgets.QWidget):
         self._list = list
         for child in list.children:
             self.insert(child)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def set_selection(self, index: int = 0) -> None:
+        self.ui.items.setCurrentRow(index)
+        self.ui.items.setFocus()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if event.type() == QtCore.QEvent.KeyPress:
+            if event.key() == QtCore.Qt.Key_Right:
+                # Set the current child list as focused.
+                current: ChecklistWidget = self.ui.children.currentWidget()
+                if current:
+                    current.ui.items.setFocus()
+
+                    # If no items are selected in the child list then select the first one.
+                    if not current.ui.items.selectedItems():
+                        current.ui.items.setCurrentRow(0)
+
+                return True
+
+            if event.key() == QtCore.Qt.Key_Left:
+                if self._parent_widget:
+                    self._parent_widget.ui.items.setFocus()
+                return True
+
+        return super().eventFilter(watched, event)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -183,7 +214,7 @@ class ChecklistWidget(QtWidgets.QWidget):
         item_widget.contentChanged.connect(lambda: self.contentChanged.emit())
 
         # Recursively add children items to the children stack.
-        list_widget = ChecklistWidget(self)
+        list_widget = ChecklistWidget(self.ui.children, self)
         list_widget.set_item_model(item)
         list_widget.contentChanged.connect(lambda: self.contentChanged.emit())
         self.ui.children.addWidget(list_widget)

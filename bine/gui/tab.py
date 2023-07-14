@@ -98,6 +98,7 @@ class TabWidget(QtWidgets.QWidget):
         self.ui.title.setText(self.document.title)
         self.ui.description.setPlainText(self.document.description)
         self.ui.lists.set_item_model(self.document.root)
+        self.ui.lists.set_selection(0)
 
         # Hide the description if the document doesn't have one.
         if not self.document.description:
