@@ -28,7 +28,7 @@ import pickle
 from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
 
 from bine.gui.base.tab import Ui_Tab
-from bine.model.document import DocumentModel
+from bine.model.document import DocumentModel, ItemModel
 
 
 
@@ -40,6 +40,7 @@ class TabWidget(QtWidgets.QWidget):
     """A tree and editor for a single document within a single tab of the GUI window."""
 
     contentChanged = QtCore.Signal()
+    itemSelected = QtCore.Signal(ItemModel)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -54,9 +55,18 @@ class TabWidget(QtWidgets.QWidget):
         # Connect events.
         self.ui.group.toggled.connect(self._toggle_details_group)
 
+        # Connect the update event to the top level widget.  This way, any change from an item will update the state of
+        # the entire tree.  This ensures that parents will update children when checked and progress bars get updated
+        # for parents, going the other way.
+        def item_changed():
+            self.ui.lists.update()
+            self.contentChanged.emit()
+        self.ui.lists.contentChanged.connect(item_changed)
+        self.ui.lists.itemSelected.connect(lambda item: self.itemSelected.emit(item))
+
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _toggle_details_group(self):
+    def _toggle_details_group(self) -> None:
         if self.ui.group.isChecked():
             self.show_details()
         else:
@@ -64,19 +74,19 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def show_details(self):
+    def show_details(self) -> None:
         self.ui.group.setChecked(True)
         self.ui.group.setFixedHeight(self.ui.group.sizeHint().height())
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def hide_details(self):
+    def hide_details(self) -> None:
         self.ui.group.setChecked(False)
         self.ui.group.setFixedHeight(18)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def open(self, filename: str):
+    def open(self, filename: str) -> None:
         """Load the specified document in this tab.
 
         Arguments:
@@ -88,14 +98,6 @@ class TabWidget(QtWidgets.QWidget):
         self.ui.title.setText(self.document.title)
         self.ui.description.setPlainText(self.document.description)
         self.ui.lists.set_item_model(self.document.root)
-
-        # Connect the update event to the top level widget.  This way, any change from an item will update the state of
-        # the entire tree.  This ensures that parents will update children when checked and progress bars get updated
-        # for parents, going the other way.
-        def item_changed():
-            self.ui.lists.update()
-            self.contentChanged.emit()
-        self.ui.lists.contentChanged.connect(item_changed)
 
         # Hide the description if the document doesn't have one.
         if not self.document.description:
@@ -128,7 +130,7 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _save_dialog(self):
+    def _save_dialog(self) -> str:
         """Launch a save file dialog and return the selected filename.
 
         Shared for save as and save a copy.
@@ -156,21 +158,11 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def save_copy(self):
+    def save_copy(self) -> None:
         """Save a copy of the current document and continue editing under the existing filename."""
         filename = self._save_dialog()
         if filename:
             self.document.dump(filename, self.settings, update_cache=False)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    def context(self, point: QtCore.QPoint):
-        """Fires when the context menu is requested for the tree.
-
-        Arguments:
-            point: The location where the right click took place in the tree.
-        """
-        self.ui.popmenu.exec(self.ui.columns.mapToGlobal(point))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -200,9 +192,9 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def copy(self):
+    def copy(self) -> None:
         """Copy the currently selected item and it's children both as plain text and as binary (for internal use)."""
-        item = self.ui.lists.get_selected_leaf().item()
+        item = self.ui.lists.get_selected_leaf_item().item()
 
         mime_data = QtCore.QMimeData()
         mime_data.setText(item.dump())
@@ -212,9 +204,9 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def paste(self):
+    def paste(self) -> None:
         mime_data = self.clipboard.mimeData()
-        selected = self.ui.lists.get_selected_leaf()
+        selected = self.ui.lists.get_selected_leaf_item()
 
         # First, see if there is any custom data to be pasted (copied to clipboard already from Bine).
         data = mime_data.data('application/vnd-bine-item')
@@ -225,9 +217,20 @@ class TabWidget(QtWidgets.QWidget):
             print(selected.item().text)
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+    def insert(self) -> None:
+        selected = self.ui.lists.get_selected_leaf_item()
+        selected.insert()
+
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def on_print(self):
+    def delete(self) -> None:
+        selected = self.ui.lists.get_selected_leaf_list()
+        selected.delete()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def on_print(self) -> None:
         """Print the current document."""
         dialog = QtPrintSupport.QPrintDialog()
         if dialog.exec() == QtWidgets.QDialog.Accepted:
@@ -237,7 +240,7 @@ class TabWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def preview(self):
+    def preview(self) -> None:
         """Preview the HTML before printing."""
         browser = QtWidgets.QTextEdit()
         browser.setHtml(self.document.to_html(self.settings))

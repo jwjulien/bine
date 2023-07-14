@@ -48,7 +48,7 @@ class ItemModel:
 
 # ----------------------------------------------------------------------------------------------------------------------
     @property
-    def checked(self):
+    def checked(self) -> bool:
         if not self.children:
             return self._checked
         # TODO: Can this be an option?  It's handy for some applications but there are circumstances when the parent
@@ -57,7 +57,7 @@ class ItemModel:
         return all([child.checked for child in self.children])
 
     @checked.setter
-    def checked(self, value):
+    def checked(self, value: bool):
         if self.children:
             for child in self.children:
                 child.checked = value

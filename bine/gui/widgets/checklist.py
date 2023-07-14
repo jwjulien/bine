@@ -38,7 +38,7 @@ class ChecklistWidget(QtWidgets.QWidget):
     """A widget that contains a QListWidget of ItemModel objects to be used in a column view."""
 
     contentChanged = QtCore.Signal()
-    # itemSelected = QtCore.Signal(ItemModel)
+    itemSelected = QtCore.Signal(ItemModel)
 
     def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
@@ -59,13 +59,10 @@ class ChecklistWidget(QtWidgets.QWidget):
         self.popmenu_insert.triggered.connect(self.insert)
         self.popmenu_delete.triggered.connect(self.delete)
 
-        # self.ui.items.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        # self.ui.items.customContextMenuRequested.connect(lambda p: self.popmenu.exec(self.ui.items.mapToGlobal(p)))
-        # self.ui.items.currentItemChanged.connect(self._item_selected)
-        # self.ui.items.itemChanged.connect(self._item_changed)
+        self.ui.items.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui.items.customContextMenuRequested.connect(lambda p: self.popmenu.exec(self.ui.items.mapToGlobal(p)))
         self.ui.items.itemSelectionChanged.connect(self._selection_changed)
         self.ui.items.dropEvent = self.dropEvent
-        self.installEventFilter(self)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -74,37 +71,10 @@ class ChecklistWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:
-        # if event.type() in [QtCore.QEvent.KeyPress, QtCore.QEvent.ShortcutOverride]:
-        #     if event.matches(QtGui.QKeySequence.Cut):
-        #         print('Cut')
-        #         return True
-        #     elif event.matches(QtGui.QKeySequence.Copy):
-        #         print('Copy')
-        #         return True
-        #     elif event.matches(QtGui.QKeySequence.Paste):
-        #         print('Paste')
-        #         return True
-        return super().eventFilter(watched, event)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
     def set_item_model(self, list: ItemModel):
         self._list = list
         for child in list.children:
-            item = QtWidgets.QListWidgetItem(self.ui.items)
-            item.setData(QtCore.Qt.UserRole, child)
-            self.ui.items.addItem(item)
-            item_widget = ChecklistItemWidget(None, child)
-            item.setData(QtCore.Qt.UserRole, item_widget)
-            self.ui.items.setItemWidget(item, item_widget)
-            item_widget.contentChanged.connect(lambda: self.contentChanged.emit())
-
-            # Recursively add children items to the children stack.
-            list_widget = ChecklistWidget(self.ui.children)
-            list_widget.set_item_model(child)
-            list_widget.contentChanged.connect(lambda: self.contentChanged.emit())
-            self.ui.children.addWidget(list_widget)
+            self._insert_item(child)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -128,15 +98,10 @@ class ChecklistWidget(QtWidgets.QWidget):
         def get_index(item: ItemModel) -> int:
             for index in range(self.ui.items.count()):
                 widget = self.ui.items.item(index)
-                if widget.data(QtCore.Qt.UserRole) is item:
+                if widget.data(QtCore.Qt.UserRole).item() is item:
                     return index
             return None
         self._list.children.sort(key=get_index)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-    # def _make_widget(self, item: ItemModel) -> QtWidgets.QListWidgetItem:
-    #     return ChecklistItemWidget(self, item)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -144,21 +109,24 @@ class ChecklistWidget(QtWidgets.QWidget):
         selected = self.ui.items.selectedIndexes()
         self.popmenu_delete.setEnabled(len(selected) == 1)
         if selected:
-            item = selected[0]
-            self.ui.children.setCurrentIndex(item.row())
+            row = selected[0].row()
+            self.ui.children.setCurrentIndex(row)
             self.ui.children.setVisible(True)
+            item = self.ui.items.item(row).data(QtCore.Qt.UserRole).item()
+            self.itemSelected.emit(item)
         else:
             self.ui.children.setVisible(False)
+            self.itemSelected.emit(None)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def get_selected_leaf(self) -> 'ChecklistWidget':
-        """Dive the tree to get the child-most currently selected item."""
+    def get_selected_leaf_item(self) -> 'ChecklistWidget':
+        """Dive the tree to get the child-most currently selected list widget."""
         selected = self.ui.items.selectedIndexes()
         if selected:
             index = selected[0].row()
             child: ChecklistWidget = self.ui.children.widget(index)
-            item = child.get_selected_leaf()
+            item = child.get_selected_leaf_item()
             if item is None:
                 item = self.ui.items.item(index).data(QtCore.Qt.UserRole)
             return item
@@ -167,155 +135,58 @@ class ChecklistWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def insert(self, item: ItemModel = None):
+    def get_selected_leaf_list(self) -> 'ChecklistWidget':
+        selected = self.ui.items.selectedIndexes()
+        if selected:
+            child: ChecklistWidget = self.ui.children.widget(selected[0].row())
+            list = child.get_selected_leaf_list()
+            if list is None:
+                return self
+            return list
+        else:
+            return None
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def insert(self):
+        item = ItemModel(self._list)
+        self._list.children.append(item)
+        self._insert_item(item)
+        item.item_widget.edit()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def _insert_item(self, item: ItemModel):
         """Called to insert a new item into the list at the current selected location.
 
         If no item in the list is currently selected then insert a new item at the end of the list.
         """
-        indexes = self.ui.items.selectedIndexes()
-        row = indexes[-1].row() if len(indexes) > 0 else self._list.childCount()
+        list_item = QtWidgets.QListWidgetItem(self.ui.items)
+        list_item.setData(QtCore.Qt.UserRole, item)
+        self.ui.items.addItem(list_item)
+        item_widget = ChecklistItemWidget(None, item)
+        list_item.setData(QtCore.Qt.UserRole, item_widget)
+        self.ui.items.setItemWidget(list_item, item_widget)
+        item_widget.contentChanged.connect(lambda: self.contentChanged.emit())
 
-        if item is None:
-            item = ItemModel(self._list)
-        self._list.children.insert(row, item)
-
-        widget = ChecklistItemWidget(None, item)
-        widget.set_item_model(item)
-        self.ui.items.insertItem(row, widget)
-        self.ui.items.editItem(widget)
+        # Recursively add children items to the children stack.
+        list_widget = ChecklistWidget(self.ui.children)
+        list_widget.set_item_model(item)
+        list_widget.contentChanged.connect(lambda: self.contentChanged.emit())
+        self.ui.children.addWidget(list_widget)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def delete(self):
         """Fires to delete the currently selected item from the list."""
-        indexes = self.ui.items.selectedIndexes()
-        row = indexes[-1].row() if len(indexes) > 0 else self._list.childCount()
-        print('Delete row', row)
+        selected = self.ui.items.selectedIndexes()
+        if not selected:
+            return
+        row = selected[0].row()
         self.ui.items.takeItem(row)
+        self.ui.children.removeWidget(self.ui.children.widget(row))
         self._list.children.pop(row)
         self.contentChanged.emit()
-        # self.itemSelected.emit(self._list)
-
-
-# # ----------------------------------------------------------------------------------------------------------------------
-#     def move_up(self):
-#         """Fires when the user selects the move up menu option.  Moves the item up one position."""
-#         selection = self._selected_indexes()
-#         if not selection:
-#             return
-#         for node in selection:
-#             item: ChecklistItem = node.data(0, QtCore.Qt.UserRole)
-#             index = item.row()
-#             if index > 0:
-#                 item.parent.children.pop(index)
-#                 item.parent.children.insert(index - 1, item)
-
-#                 parent = node.parent()
-#                 if parent:
-#                     parent.removeChild(node)
-#                     parent.insertChild(index - 1, node)
-#                 else:
-#                     self.ui.columns.takeTopLevelItem(index)
-#                     self.ui.columns.insertTopLevelItem(index - 1, node)
-
-#                 self.ui.columns.setCurrentItem(node, 0)
-
-#         self.contentChanged.emit()
-
-
-# # ----------------------------------------------------------------------------------------------------------------------
-#     def move_down(self):
-#         """Fires when the user selects the move down menu option.  Moves the item down one position."""
-#         selection = self._selected_indexes(True)
-#         if not selection:
-#             return
-#         for node in selection:
-#             item: ItemModel = node.data(0, QtCore.Qt.UserRole)
-#             index = item.row()
-#             if index < (len(item.parent.children) - 1):
-#                 item.parent.children.pop(index)
-#                 item.parent.children.insert(index + 1, item)
-
-#                 parent = node.parent()
-#                 if parent:
-#                     parent.removeChild(node)
-#                     parent.insertChild(index + 1, node)
-#                 else:
-#                     self.ui.columns.takeTopLevelItem(index)
-#                     self.ui.columns.insertTopLevelItem(index + 1, node)
-
-#                 self.ui.columns.setCurrentItem(node, 0)
-
-#         self.contentChanged.emit()
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#     def indent(self):
-#         """Fires when the user selects the indent menu option.  Moves the item to be a sibling of the item above."""
-#         selection = self._selected_indexes()
-#         if not selection:
-#             return
-#         top = selection[0]
-#         parent = top.parent()
-#         if parent:
-#             parent_item: ItemModel = parent.data(0, QtCore.Qt.UserRole)
-#             above = parent.child(parent.indexOfChild(top) - 1)
-#         else:
-#             parent_item: ItemModel = self.model.root
-#             above = self.ui.columns.topLevelItem(self.ui.columns.indexOfTopLevelItem(top) - 1)
-#         above_item: ItemModel = above.data(0, QtCore.Qt.UserRole)
-
-#         for node in selection:
-#             # Move the item in the model.
-#             item: ItemModel = node.data(0, QtCore.Qt.UserRole)
-#             parent_item.children.pop(item.row())
-#             above_item.children.append(item)
-#             item.parent = above_item
-
-#             # Move the item in the tree.
-#             if parent:
-#                 parent.removeChild(node)
-#             else:
-#                 self.ui.columns.takeTopLevelItem(item.row())
-#             above.addChild(node)
-
-#             self.ui.columns.setCurrentItem(node, 0)
-
-#         self.contentChanged.emit()
-
-
-# # ----------------------------------------------------------------------------------------------------------------------
-#     def dedent(self):
-#         """Fires when the user selects the dedent menu option.  Moves the selected item up to the parent level."""
-#         selection = self._selected_indexes(True)
-#         if not selection:
-#             return
-#         for node in selection:
-#             item: ItemModel = node.data(0, QtCore.Qt.UserRole)
-#             if item.parent.parent:
-#                 # Move the node in the model.
-#                 item.parent.children.pop(item.row())
-#                 index = item.parent.row() + 1
-#                 item.parent.parent.children.insert(index, item)
-#                 item.parent = item.parent.parent
-
-#                 # Move the node within the tree.
-#                 parent = node.parent()
-#                 parent.removeChild(node)
-
-#                 if parent.childCount() == 0:
-#                     parent_item = parent.data(0, QtCore.Qt.UserRole)
-#                     parent.setCheckState(0, QtCore.Qt.Checked if parent_item.checked else QtCore.Qt.Unchecked)
-
-#                 grandparent = parent.parent()
-#                 if grandparent:
-#                     grandparent.insertChild(index, node)
-#                 else:
-#                     self.ui.columns.insertTopLevelItem(index, node)
-
-#                 self.ui.columns.setCurrentItem(node, 0)
-
-#         self.contentChanged.emit()
 
 
 

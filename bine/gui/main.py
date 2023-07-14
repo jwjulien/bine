@@ -86,8 +86,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionDelete.triggered.connect(lambda: self.ui.tabs.currentWidget().delete())
         self.ui.actionMoveUp.triggered.connect(lambda: self.ui.tabs.currentWidget().move_up())
         self.ui.actionMoveDown.triggered.connect(lambda: self.ui.tabs.currentWidget().move_down())
-        self.ui.actionIndent.triggered.connect(lambda: self.ui.tabs.currentWidget().indent())
-        self.ui.actionDedent.triggered.connect(lambda: self.ui.tabs.currentWidget().dedent())
+        # self.ui.actionIndent.triggered.connect(lambda: self.ui.tabs.currentWidget().indent())
+        # self.ui.actionDedent.triggered.connect(lambda: self.ui.tabs.currentWidget().dedent())
         self.ui.actionCheckAll.triggered.connect(lambda: self.ui.tabs.currentWidget().check_all())
         self.ui.actionUncheckAll.triggered.connect(lambda: self.ui.tabs.currentWidget().uncheck_all())
         self.ui.actionTristate.triggered.connect(self.tristate)
@@ -250,19 +250,18 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.tabs.setTabText(index, f'{dirty}{filename}')
             self.ui.tabs.setTabToolTip(index, os.path.abspath(tab.filename) if tab.filename else '')
 
-        def selection_changed(selection: List[ItemModel]) -> None:
+        def selection_changed(item: ItemModel) -> None:
             """Connected to the tree selection changes in the tab.
 
             Adjusts the availability of the options in the edit menu according to the new selection.
             """
-            self.ui.actionInsertSibling.setEnabled(len(selection) == 1)
-            self.ui.actionDelete.setEnabled(len(selection) > 0)
-            self.ui.actionMoveUp.setEnabled(all(item.childNumber() > 0 for item in selection))
-            self.ui.actionMoveDown.setEnabled(all(not item.isLastChild() for item in selection))
-            self.ui.actionIndent.setEnabled(all(item.childNumber() != 0 for item in selection))
-            self.ui.actionDedent.setEnabled(all(item.level > 1 for item in selection))
+            self.ui.actionDelete.setEnabled(item is not None)
+            # self.ui.actionMoveUp.setEnabled(all(item.childNumber() > 0 for item in selection))
+            # self.ui.actionMoveDown.setEnabled(all(not item.isLastChild() for item in selection))
+            # self.ui.actionIndent.setEnabled(all(item.childNumber() != 0 for item in selection))
+            # self.ui.actionDedent.setEnabled(all(item.level > 1 for item in selection))
 
-        # tab.selectionChanged.connect(selection_changed)
+        tab.itemSelected.connect(selection_changed)
         tab.contentChanged.connect(content_changed)
         # tab.undoTextChanged.connect(lambda text: self.ui.actionUndo.setStatusTip('Undo ' + text))
         # tab.redoTextChanged.connect(lambda text: self.ui.actionRedo.setStatusTip('Redo ' + text))
