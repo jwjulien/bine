@@ -194,19 +194,21 @@ class TabWidget(QtWidgets.QWidget):
 # ----------------------------------------------------------------------------------------------------------------------
     def copy(self) -> None:
         """Copy the currently selected item and it's children both as plain text and as binary (for internal use)."""
-        item = self.ui.lists.get_selected_leaf_item().item()
+        widget = self.ui.lists.get_selected_leaf_item()
+        if widget:
+            item = widget.item()
 
-        mime_data = QtCore.QMimeData()
-        mime_data.setText(item.dump())
-        mime_data.setData('application/vnd-bine-item', pickle.dumps(item))
+            mime_data = QtCore.QMimeData()
+            mime_data.setText(item.dump())
+            mime_data.setData('application/vnd-bine-item', pickle.dumps(item))
 
-        self.clipboard.setMimeData(mime_data)
+            self.clipboard.setMimeData(mime_data)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def paste(self) -> None:
         mime_data = self.clipboard.mimeData()
-        selected = self.ui.lists.get_selected_leaf_item()
+        selected = self.ui.lists.get_selected_leaf_list()
         parent = selected.item()
 
         # First, see if there is any custom data to be pasted (copied to clipboard already from Bine).
@@ -234,18 +236,31 @@ class TabWidget(QtWidgets.QWidget):
                 self.contentChanged.emit()
 
 
-
-
 # ----------------------------------------------------------------------------------------------------------------------
     def insert(self) -> None:
-        selected = self.ui.lists.get_selected_leaf_item()
+        selected = self.ui.lists.get_selected_leaf_list()
         selected.add()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+    def edit(self) -> None:
+        selected = self.ui.lists.get_selected_leaf_item()
+        if selected:
+            selected.edit()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
     def delete(self) -> None:
-        selected = self.ui.lists.get_selected_leaf_list()
-        selected.delete()
+        selected = self.ui.lists.get_selected_leaf_parent_list()
+        if selected:
+            selected.delete()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def toggle(self) -> None:
+        selected = self.ui.lists.get_selected_leaf_item()
+        if selected:
+            selected.toggle()
 
 
 # ----------------------------------------------------------------------------------------------------------------------

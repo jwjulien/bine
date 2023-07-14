@@ -83,6 +83,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionCopy.triggered.connect(lambda: self.ui.tabs.currentWidget().copy())
         self.ui.actionPaste.triggered.connect(lambda: self.ui.tabs.currentWidget().paste())
         self.ui.actionInsert.triggered.connect(lambda: self.ui.tabs.currentWidget().insert())
+        self.ui.actionEdit.triggered.connect(lambda: self.ui.tabs.currentWidget().edit())
         self.ui.actionDelete.triggered.connect(lambda: self.ui.tabs.currentWidget().delete())
         self.ui.actionMoveUp.triggered.connect(lambda: self.ui.tabs.currentWidget().move_up())
         self.ui.actionMoveDown.triggered.connect(lambda: self.ui.tabs.currentWidget().move_down())
@@ -90,6 +91,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.ui.actionDedent.triggered.connect(lambda: self.ui.tabs.currentWidget().dedent())
         self.ui.actionCheckAll.triggered.connect(lambda: self.ui.tabs.currentWidget().check_all())
         self.ui.actionUncheckAll.triggered.connect(lambda: self.ui.tabs.currentWidget().uncheck_all())
+        self.ui.actionToggleSelected.triggered.connect(lambda: self.ui.tabs.currentWidget().toggle())
         self.ui.actionTristate.triggered.connect(self.tristate)
         self.ui.actionExportHtmlWhite.triggered.connect(lambda: self.ui.tabs.currentWidget().export_html('white'))
         self.ui.actionExportHtmlSlate.triggered.connect(lambda: self.ui.tabs.currentWidget().export_html('slate'))
@@ -256,6 +258,7 @@ class MainWindow(QtWidgets.QMainWindow):
             Adjusts the availability of the options in the edit menu according to the new selection.
             """
             self.ui.actionDelete.setEnabled(item is not None)
+            self.ui.actionEdit.setEnabled(item is not None)
             # self.ui.actionMoveUp.setEnabled(all(item.childNumber() > 0 for item in selection))
             # self.ui.actionMoveDown.setEnabled(all(not item.isLastChild() for item in selection))
             # self.ui.actionIndent.setEnabled(all(item.childNumber() != 0 for item in selection))

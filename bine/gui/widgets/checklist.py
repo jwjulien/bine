@@ -120,7 +120,7 @@ class ChecklistWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def get_selected_leaf_item(self) -> 'ChecklistWidget':
+    def get_selected_leaf_item(self) -> ChecklistItemWidget:
         """Dive the tree to get the child-most currently selected list widget."""
         selected = self.ui.items.selectedIndexes()
         if selected:
@@ -131,7 +131,7 @@ class ChecklistWidget(QtWidgets.QWidget):
                 item = self.ui.items.item(index).data(QtCore.Qt.UserRole)
             return item
         else:
-            return self
+            return None
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -140,6 +140,19 @@ class ChecklistWidget(QtWidgets.QWidget):
         if selected:
             child: ChecklistWidget = self.ui.children.widget(selected[0].row())
             list = child.get_selected_leaf_list()
+            if list is None:
+                return child
+            return list
+        else:
+            return self
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def get_selected_leaf_parent_list(self) -> 'ChecklistWidget':
+        selected = self.ui.items.selectedIndexes()
+        if selected:
+            child: ChecklistWidget = self.ui.children.widget(selected[0].row())
+            list = child.get_selected_leaf_parent_list()
             if list is None:
                 return self
             return list
@@ -151,12 +164,12 @@ class ChecklistWidget(QtWidgets.QWidget):
     def add(self):
         item = ItemModel(self._list)
         self._list.children.append(item)
-        self.insert(item)
-        item.item_widget.edit()
+        widget = self.insert(item)
+        widget.edit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def insert(self, item: ItemModel):
+    def insert(self, item: ItemModel) -> ChecklistItemWidget:
         """Called to insert a new item into the list at the current selected location.
 
         If no item in the list is currently selected then insert a new item at the end of the list.
@@ -174,6 +187,8 @@ class ChecklistWidget(QtWidgets.QWidget):
         list_widget.set_item_model(item)
         list_widget.contentChanged.connect(lambda: self.contentChanged.emit())
         self.ui.children.addWidget(list_widget)
+
+        return item_widget
 
 
 # ----------------------------------------------------------------------------------------------------------------------

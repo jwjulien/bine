@@ -50,7 +50,8 @@ class ChecklistItemWidget(QtWidgets.QWidget):
         self.ui.checkbox.stateChanged.connect(self._checked)
         self.ui.stack.setCurrentWidget(self.ui.view_mode)
         self.ui.viewer.doubleClicked.connect(self.edit)
-        self.ui.editor.doneEditing.connect(self.view)
+        self.ui.editor.accept.connect(self.save)
+        self.ui.editor.reject.connect(self.revert)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -63,6 +64,12 @@ class ChecklistItemWidget(QtWidgets.QWidget):
         if not self._updating:
             self._item.checked = state == QtCore.Qt.Checked
             self.contentChanged.emit(self._item)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def toggle(self) -> None:
+        """Toggle the currently checked state for this item."""
+        self.ui.checkbox.toggle()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -89,10 +96,17 @@ class ChecklistItemWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def view(self) -> None:
+    def save(self) -> None:
         """Switch to view mode and store the state of the editor back to the item and the viewer."""
         self._item.text = self.ui.editor.text()
         self.contentChanged.emit(self._item)
+        self.update()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def revert(self) -> None:
+        """Exit edit mode but revert the changes from the editor."""
+        self.ui.editor.setText(self._item.text)
         self.update()
 
 

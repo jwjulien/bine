@@ -31,7 +31,9 @@ from PySide6 import QtCore, QtGui, QtWidgets
 # Item Editor Class
 # ----------------------------------------------------------------------------------------------------------------------
 class ItemEditor(QtWidgets.QLineEdit):
-    doneEditing = QtCore.Signal()
+    accept = QtCore.Signal()
+    reject = QtCore.Signal()
+
     def __init__(self, parent):
         super().__init__(parent)
         self.installEventFilter(self)
@@ -39,15 +41,19 @@ class ItemEditor(QtWidgets.QLineEdit):
 
 # ----------------------------------------------------------------------------------------------------------------------
     def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
-        self.doneEditing.emit()
+        self.accept.emit()
         return super().focusOutEvent(event)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def eventFilter(self, widget: QtCore.QObject, event: QtCore.QEvent) -> bool:
-        if widget is self and event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Return:
-            self.doneEditing.emit()
-            return True
+        if widget is self and event.type() == QtCore.QEvent.KeyPress:
+            if event.key() == QtCore.Qt.Key_Return:
+                self.accept.emit()
+                return True
+            if event.key() == QtCore.Qt.Key_Escape:
+                self.reject.emit()
+                return True
         return False
 
 

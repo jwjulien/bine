@@ -86,6 +86,7 @@
     <addaction name="actionPaste"/>
     <addaction name="separator"/>
     <addaction name="actionInsert"/>
+    <addaction name="actionEdit"/>
     <addaction name="actionDelete"/>
     <addaction name="separator"/>
     <addaction name="actionMoveUp"/>
@@ -95,6 +96,7 @@
     <addaction name="separator"/>
     <addaction name="actionCheckAll"/>
     <addaction name="actionUncheckAll"/>
+    <addaction name="actionToggleSelected"/>
    </widget>
    <widget class="QMenu" name="menuExport">
     <property name="title">
@@ -348,6 +350,25 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Y</string>
+   </property>
+  </action>
+  <action name="actionToggleSelected">
+   <property name="text">
+    <string>Toggle Selected</string>
+   </property>
+   <property name="shortcut">
+    <string>Space</string>
+   </property>
+  </action>
+  <action name="actionEdit">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Edit</string>
+   </property>
+   <property name="shortcut">
+    <string>F2</string>
    </property>
   </action>
  </widget>
