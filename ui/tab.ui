@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>817</width>
-    <height>577</height>
+    <width>998</width>
+    <height>666</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -74,50 +74,13 @@
     </widget>
    </item>
    <item>
-    <widget class="QScrollArea" name="scroller">
+    <widget class="ChecklistWidget" name="lists" native="true">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
        <horstretch>0</horstretch>
        <verstretch>3</verstretch>
       </sizepolicy>
      </property>
-     <property name="widgetResizable">
-      <bool>true</bool>
-     </property>
-     <widget class="QWidget" name="container">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>797</width>
-        <height>413</height>
-       </rect>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
-        <number>0</number>
-       </property>
-       <item>
-        <widget class="QFrame" name="lists">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
     </widget>
    </item>
   </layout>
@@ -127,6 +90,12 @@
    <class>MarkdownSpellTextEdit</class>
    <extends>QTextEdit</extends>
    <header>bine.gui.widgets.editor.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ChecklistWidget</class>
+   <extends>QWidget</extends>
+   <header>bine.gui.widgets.checklist</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

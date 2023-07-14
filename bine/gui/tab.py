@@ -23,11 +23,11 @@
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
 import os
+import pickle
 
-from PySide6 import QtCore, QtWidgets, QtPrintSupport
+from PySide6 import QtCore, QtGui, QtWidgets, QtPrintSupport
 
 from bine.gui.base.tab import Ui_Tab
-from bine.gui.widgets.checklist import ChecklistWidget
 from bine.model.document import DocumentModel
 
 
@@ -49,8 +49,7 @@ class TabWidget(QtWidgets.QWidget):
         self.settings = parent.settings
         self.filename = None
         self.document = DocumentModel()
-
-        self.ui.lists_layout = QtWidgets.QHBoxLayout(self.ui.lists)
+        self.clipboard = QtGui.QClipboard()
 
         # Connect events.
         self.ui.group.toggled.connect(self._toggle_details_group)
@@ -88,17 +87,15 @@ class TabWidget(QtWidgets.QWidget):
 
         self.ui.title.setText(self.document.title)
         self.ui.description.setPlainText(self.document.description)
-
-        widget = ChecklistWidget(self, self.document.root)
-        self.ui.lists_layout.addWidget(widget)
+        self.ui.lists.set_item_model(self.document.root)
 
         # Connect the update event to the top level widget.  This way, any change from an item will update the state of
         # the entire tree.  This ensures that parents will update children when checked and progress bars get updated
         # for parents, going the other way.
         def item_changed():
-            widget.update()
+            self.ui.lists.update()
             self.contentChanged.emit()
-        widget.contentChanged.connect(item_changed)
+        self.ui.lists.contentChanged.connect(item_changed)
 
         # Hide the description if the document doesn't have one.
         if not self.document.description:
@@ -200,6 +197,33 @@ class TabWidget(QtWidgets.QWidget):
 
         # It they said discard then return True indicating the software should proceed anyways.
         return True
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def copy(self):
+        """Copy the currently selected item and it's children both as plain text and as binary (for internal use)."""
+        item = self.ui.lists.get_selected_leaf().item()
+
+        mime_data = QtCore.QMimeData()
+        mime_data.setText(item.dump())
+        mime_data.setData('application/vnd-bine-item', pickle.dumps(item))
+
+        self.clipboard.setMimeData(mime_data)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def paste(self):
+        mime_data = self.clipboard.mimeData()
+        selected = self.ui.lists.get_selected_leaf()
+
+        # First, see if there is any custom data to be pasted (copied to clipboard already from Bine).
+        data = mime_data.data('application/vnd-bine-item')
+        if data:
+            item = pickle.loads(data)
+            # selected.
+            # self.update()
+            print(selected.item().text)
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------

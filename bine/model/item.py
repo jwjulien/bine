@@ -100,6 +100,17 @@ class ItemModel:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+    def dump(self, level: int = 0) -> str:
+        indent = ' ' * (level * 4)
+        text = f"{indent}- [{'x' if self.checked else ' '}] {self.text}\n"
+
+        for child in self.children:
+            text += child.dump(level + 1)
+
+        return text
+
+
+# ----------------------------------------------------------------------------------------------------------------------
     def repr(self, level: int = 1) -> str:
         indent = '  ' * level
         text = f"{indent}<ItemModel checked={self.checked} text=\"{self.text}\"{'/' if not self.children else ''}>"
@@ -108,6 +119,11 @@ class ItemModel:
             text += f'\n'.join(child.repr(level + 1) for child in self.children)
             text += f'\n{indent}</ItemModel>'
         return text
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def __repr__(self) -> str:
+        return self.repr()
 
 
 

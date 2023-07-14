@@ -15,17 +15,17 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QFrame, QGroupBox, QHBoxLayout,
-    QLineEdit, QScrollArea, QSizePolicy, QVBoxLayout,
-    QWidget)
+from PySide6.QtWidgets import (QApplication, QGroupBox, QLineEdit, QSizePolicy,
+    QVBoxLayout, QWidget)
 
+from bine.gui.widgets.checklist import ChecklistWidget
 from bine.gui.widgets.editor import MarkdownSpellTextEdit
 
 class Ui_Tab(object):
     def setupUi(self, Tab):
         if not Tab.objectName():
             Tab.setObjectName(u"Tab")
-        Tab.resize(817, 577)
+        Tab.resize(998, 666)
         self.verticalLayout_2 = QVBoxLayout(Tab)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.group = QGroupBox(Tab)
@@ -59,30 +59,15 @@ class Ui_Tab(object):
 
         self.verticalLayout_2.addWidget(self.group)
 
-        self.scroller = QScrollArea(Tab)
-        self.scroller.setObjectName(u"scroller")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.lists = ChecklistWidget(Tab)
+        self.lists.setObjectName(u"lists")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(3)
-        sizePolicy1.setHeightForWidth(self.scroller.sizePolicy().hasHeightForWidth())
-        self.scroller.setSizePolicy(sizePolicy1)
-        self.scroller.setWidgetResizable(True)
-        self.container = QWidget()
-        self.container.setObjectName(u"container")
-        self.container.setGeometry(QRect(0, 0, 797, 413))
-        self.horizontalLayout = QHBoxLayout(self.container)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        self.lists = QFrame(self.container)
-        self.lists.setObjectName(u"lists")
-        self.lists.setFrameShape(QFrame.StyledPanel)
-        self.lists.setFrameShadow(QFrame.Raised)
+        sizePolicy1.setHeightForWidth(self.lists.sizePolicy().hasHeightForWidth())
+        self.lists.setSizePolicy(sizePolicy1)
 
-        self.horizontalLayout.addWidget(self.lists)
-
-        self.scroller.setWidget(self.container)
-
-        self.verticalLayout_2.addWidget(self.scroller)
+        self.verticalLayout_2.addWidget(self.lists)
 
 
         self.retranslateUi(Tab)

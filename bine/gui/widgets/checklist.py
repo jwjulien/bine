@@ -22,8 +22,6 @@
 # ======================================================================================================================
 # Imports
 # ----------------------------------------------------------------------------------------------------------------------
-from typing import List
-
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from bine.gui.base.checklist import Ui_ChecklistWidget
@@ -42,27 +40,13 @@ class ChecklistWidget(QtWidgets.QWidget):
     contentChanged = QtCore.Signal()
     # itemSelected = QtCore.Signal(ItemModel)
 
-    def __init__(self, parent: QtWidgets.QWidget, list: ItemModel):
+    def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
         self.ui = Ui_ChecklistWidget()
         self.ui.setupUi(self)
 
         self._mouse_position: QtCore.QPoint = None
-
-        self._list = list
-        for child in list.children:
-            item = QtWidgets.QListWidgetItem(self.ui.items)
-            item.setData(QtCore.Qt.UserRole, child)
-            self.ui.items.addItem(item)
-            item_widget = ChecklistItemWidget(None, child)
-            item.setData(QtCore.Qt.UserRole, item_widget)
-            self.ui.items.setItemWidget(item, item_widget)
-            item_widget.contentChanged.connect(lambda: self.contentChanged.emit())
-
-            # Recursively add children items to the children stack.
-            list_widget = ChecklistWidget(self.ui.children, child)
-            list_widget.contentChanged.connect(lambda: self.contentChanged.emit())
-            self.ui.children.addWidget(list_widget)
+        self._list: ItemModel = None
 
         self.ui.children.setVisible(False)
 
@@ -81,18 +65,46 @@ class ChecklistWidget(QtWidgets.QWidget):
         # self.ui.items.itemChanged.connect(self._item_changed)
         self.ui.items.itemSelectionChanged.connect(self._selection_changed)
         self.ui.items.dropEvent = self.dropEvent
+        self.installEventFilter(self)
 
-        # Connect every event and print info for testing.
-        # self.ui.items.currentItemChanged.connect(lambda current, previous: print('Current item changed:', current, previous))
-        # self.ui.items.currentRowChanged.connect(lambda row: print('Current row changed:', row))
-        # self.ui.items.currentTextChanged.connect(lambda text: print('Current text changed:', text))
-        # self.ui.items.itemActivated.connect(lambda item: print('Activated:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.items.itemChanged.connect(lambda item: print('Changed:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.items.itemClicked.connect(lambda item: print('Clicked:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.items.itemDoubleClicked.connect(lambda item: print('Double Clicked:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.items.itemEntered.connect(lambda item: print('Entered:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.items.itemPressed.connect(lambda item: print('Pressed:', item.data(QtCore.Qt.UserRole)))
-        # self.ui.items.itemSelectionChanged.connect(lambda: print('Selection Changed'))
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def item(self) -> ItemModel:
+        return self._list
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        # if event.type() in [QtCore.QEvent.KeyPress, QtCore.QEvent.ShortcutOverride]:
+        #     if event.matches(QtGui.QKeySequence.Cut):
+        #         print('Cut')
+        #         return True
+        #     elif event.matches(QtGui.QKeySequence.Copy):
+        #         print('Copy')
+        #         return True
+        #     elif event.matches(QtGui.QKeySequence.Paste):
+        #         print('Paste')
+        #         return True
+        return super().eventFilter(watched, event)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def set_item_model(self, list: ItemModel):
+        self._list = list
+        for child in list.children:
+            item = QtWidgets.QListWidgetItem(self.ui.items)
+            item.setData(QtCore.Qt.UserRole, child)
+            self.ui.items.addItem(item)
+            item_widget = ChecklistItemWidget(None, child)
+            item.setData(QtCore.Qt.UserRole, item_widget)
+            self.ui.items.setItemWidget(item, item_widget)
+            item_widget.contentChanged.connect(lambda: self.contentChanged.emit())
+
+            # Recursively add children items to the children stack.
+            list_widget = ChecklistWidget(self.ui.children)
+            list_widget.set_item_model(child)
+            list_widget.contentChanged.connect(lambda: self.contentChanged.emit())
+            self.ui.children.addWidget(list_widget)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -108,6 +120,10 @@ class ChecklistWidget(QtWidgets.QWidget):
 
 # ----------------------------------------------------------------------------------------------------------------------
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
+        """When an item is dropped in the GUI, sort the parent list according to the GUI indexes.
+
+        This feels like a hack.  Is there a better way to sync the GUI sort order to the model?
+        """
         QtWidgets.QListWidget.dropEvent(self.ui.items, event)
         def get_index(item: ItemModel) -> int:
             for index in range(self.ui.items.count()):
@@ -119,14 +135,8 @@ class ChecklistWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def _make_widget(self, item: ItemModel) -> QtWidgets.QListWidgetItem:
-        return ChecklistItemWidget(self, item)
-
-
-# # ----------------------------------------------------------------------------------------------------------------------
-#     def _item_selected(self, current: QtWidgets.QListWidgetItem, previous: QtWidgets.QListWidgetItem) -> None:
-#         item = current.data(QtCore.Qt.UserRole)
-#         self.itemSelected.emit(item)
+    # def _make_widget(self, item: ItemModel) -> QtWidgets.QListWidgetItem:
+    #     return ChecklistItemWidget(self, item)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -141,9 +151,23 @@ class ChecklistWidget(QtWidgets.QWidget):
             self.ui.children.setVisible(False)
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+    def get_selected_leaf(self) -> 'ChecklistWidget':
+        """Dive the tree to get the child-most currently selected item."""
+        selected = self.ui.items.selectedIndexes()
+        if selected:
+            index = selected[0].row()
+            child: ChecklistWidget = self.ui.children.widget(index)
+            item = child.get_selected_leaf()
+            if item is None:
+                item = self.ui.items.item(index).data(QtCore.Qt.UserRole)
+            return item
+        else:
+            return self
+
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def insert(self):
+    def insert(self, item: ItemModel = None):
         """Called to insert a new item into the list at the current selected location.
 
         If no item in the list is currently selected then insert a new item at the end of the list.
@@ -151,10 +175,12 @@ class ChecklistWidget(QtWidgets.QWidget):
         indexes = self.ui.items.selectedIndexes()
         row = indexes[-1].row() if len(indexes) > 0 else self._list.childCount()
 
-        item = ItemModel(self._list)
+        if item is None:
+            item = ItemModel(self._list)
         self._list.children.insert(row, item)
 
-        widget = self._make_widget(item)
+        widget = ChecklistItemWidget(None, item)
+        widget.set_item_model(item)
         self.ui.items.insertItem(row, widget)
         self.ui.items.editItem(widget)
 

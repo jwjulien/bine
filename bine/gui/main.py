@@ -79,7 +79,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionExit.triggered.connect(self.close)
         # self.ui.actionUndo.triggered.connect(lambda: self.ui.tabs.currentWidget().undo())
         # self.ui.actionRedo.triggered.connect(lambda: self.ui.tabs.currentWidget().redo())
-        self.ui.actionCut.triggered.connect(lambda: self.ui.tabs.currentWidget().cut())
+        # self.ui.actionCut.triggered.connect(lambda: self.ui.tabs.currentWidget().cut())
         self.ui.actionCopy.triggered.connect(lambda: self.ui.tabs.currentWidget().copy())
         self.ui.actionPaste.triggered.connect(lambda: self.ui.tabs.currentWidget().paste())
         self.ui.actionInsert.triggered.connect(lambda: self.ui.tabs.currentWidget().insert())

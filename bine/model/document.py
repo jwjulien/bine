@@ -129,23 +129,12 @@ class DocumentModel:
 # ----------------------------------------------------------------------------------------------------------------------
     def dumps(self, settings: Settings) -> str:
         """Return the contents of this document as a sting."""
-        def dump_node(node: ItemModel) -> str:
-            text = ''
-
-            for item in node.children:
-                indent = ' ' * ((item.level - 1) * 4)
-                text += f"{indent}- [{'x' if item.checked else ' '}] {item.text}\n"
-
-                # Recurse into children, when applicable (returns nothing when this is a leaf node).
-                text += dump_node(item)
-
-            return text
-
         text = self.title + '\n'
         text += ('=' * 120) + '\n'
         text += self.description
         text += '\n\n'
-        text += dump_node(self.root)
+        for child in self.root.children:
+            text += child.dump()
         return text
 
 

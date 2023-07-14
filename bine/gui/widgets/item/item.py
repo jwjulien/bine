@@ -54,6 +54,11 @@ class ChecklistItemWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+    def item(self) -> ItemModel:
+        return self._item
+
+
+# ----------------------------------------------------------------------------------------------------------------------
     def _checked(self, state: QtCore.Qt.CheckState) -> None:
         if not self._updating:
             self._item.checked = state == QtCore.Qt.Checked
