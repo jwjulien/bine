@@ -42,7 +42,7 @@ class ItemModel:
     def __init__(self, parent: 'ItemModel' = None, text: str = '', checked: bool = False):
         self.parent = parent
         self.text = text
-        self.checked = checked
+        self._checked = checked
         self.children: List['ItemModel'] = []
 
 
@@ -58,7 +58,11 @@ class ItemModel:
 
     @checked.setter
     def checked(self, value):
-        self._checked = value
+        if self.children:
+            for child in self.children:
+                child.checked = value
+        else:
+            self._checked = value
 
 
 # ----------------------------------------------------------------------------------------------------------------------

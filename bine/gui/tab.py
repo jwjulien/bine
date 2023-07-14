@@ -92,6 +92,14 @@ class TabWidget(QtWidgets.QWidget):
         widget = ChecklistWidget(self, self.document.root)
         self.ui.lists_layout.addWidget(widget)
 
+        # Connect the update event to the top level widget.  This way, any change from an item will update the state of
+        # the entire tree.  This ensures that parents will update children when checked and progress bars get updated
+        # for parents, going the other way.
+        def item_changed():
+            widget.update()
+            self.contentChanged.emit()
+        widget.contentChanged.connect(item_changed)
+
         # Hide the description if the document doesn't have one.
         if not self.document.description:
             self.hide_details()
@@ -155,7 +163,7 @@ class TabWidget(QtWidgets.QWidget):
         """Save a copy of the current document and continue editing under the existing filename."""
         filename = self._save_dialog()
         if filename:
-            self.model.dump(filename, self.settings, update_cache=False)
+            self.document.dump(filename, self.settings, update_cache=False)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -177,7 +185,7 @@ class TabWidget(QtWidgets.QWidget):
             has cancelled and the caller should cease what it was doing.
         """
         # No unsaved changes, nothing to warn about.
-        if not self.model.dirty(self.settings):
+        if not self.document.dirty(self.settings):
             return True
 
         # Changes exist, lets prompt the user for an action.

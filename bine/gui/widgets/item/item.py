@@ -36,7 +36,7 @@ from bine.model.item import ItemModel
 class ChecklistItemWidget(QtWidgets.QWidget):
     """A widget that represents a single checklist item."""
 
-    contentChanged = QtCore.Signal()
+    contentChanged = QtCore.Signal(ItemModel)
 
     def __init__(self, parent: QtWidgets.QWidget, item: ItemModel):
         super().__init__(parent)
@@ -44,6 +44,7 @@ class ChecklistItemWidget(QtWidgets.QWidget):
         self.ui.setupUi(self)
 
         self._item = item
+        self._updating = False
         self.update()
 
         self.ui.checkbox.stateChanged.connect(self._checked)
@@ -54,18 +55,21 @@ class ChecklistItemWidget(QtWidgets.QWidget):
 
 # ----------------------------------------------------------------------------------------------------------------------
     def _checked(self, state: QtCore.Qt.CheckState) -> None:
-        self._item.checked = state == QtCore.Qt.Checked
-        self.contentChanged.emit()
+        if not self._updating:
+            self._item.checked = state == QtCore.Qt.Checked
+            self.contentChanged.emit(self._item)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def update(self) -> None:
         """Update the GUI from the associated item."""
+        self._updating = True
         self.ui.checkbox.setCheckState(QtCore.Qt.Checked if self._item.checked else QtCore.Qt.Unchecked)
         self.ui.viewer.setText(self._item.text)
         self.ui.children.setVisible(bool(self._item.children))
         self.ui.progress.setValue(self._item.progress)
         self.ui.count.setText(str(len(self._item.children)))
+        self._updating = False
 
         self.ui.stack.setCurrentWidget(self.ui.view_mode)
 
@@ -83,7 +87,7 @@ class ChecklistItemWidget(QtWidgets.QWidget):
     def view(self) -> None:
         """Switch to view mode and store the state of the editor back to the item and the viewer."""
         self._item.text = self.ui.editor.text()
-        self.contentChanged.emit()
+        self.contentChanged.emit(self._item)
         self.update()
 
 
