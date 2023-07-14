@@ -50,21 +50,18 @@ class ChecklistWidget(QtWidgets.QWidget):
         self._mouse_position: QtCore.QPoint = None
 
         self._list = list
-        self._item_widgets: List[ChecklistWidget] = []
-        self._child_widgets: List[ChecklistWidget] = []
         for child in list.children:
             item = QtWidgets.QListWidgetItem(self.ui.items)
             item.setData(QtCore.Qt.UserRole, child)
             self.ui.items.addItem(item)
             item_widget = ChecklistItemWidget(None, child)
+            item.setData(QtCore.Qt.UserRole, item_widget)
             self.ui.items.setItemWidget(item, item_widget)
-            self._item_widgets.append(item_widget)
             item_widget.contentChanged.connect(lambda: self.contentChanged.emit())
 
             # Recursively add children items to the children stack.
             list_widget = ChecklistWidget(self.ui.children, child)
             list_widget.contentChanged.connect(lambda: self.contentChanged.emit())
-            self._child_widgets.append(list_widget)
             self.ui.children.addWidget(list_widget)
 
         self.ui.children.setVisible(False)
@@ -100,10 +97,13 @@ class ChecklistWidget(QtWidgets.QWidget):
 
 # ----------------------------------------------------------------------------------------------------------------------
     def update(self):
-        for widget in self._item_widgets:
+        for idx in range(self.ui.items.count()):
+            widget: ChecklistWidget = self.ui.items.item(idx).data(QtCore.Qt.UserRole)
             widget.update()
-        for child in self._child_widgets:
-            child.update()
+
+        for idx in range(self.ui.children.count()):
+            widget = self.ui.children.widget(idx)
+            widget.update()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
