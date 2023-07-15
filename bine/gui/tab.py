@@ -41,6 +41,8 @@ class TabWidget(QtWidgets.QWidget):
 
     contentChanged = QtCore.Signal()
     itemSelected = QtCore.Signal(ItemModel)
+    undoTextChanged = QtCore.Signal(str)
+    redoTextChanged = QtCore.Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -51,6 +53,7 @@ class TabWidget(QtWidgets.QWidget):
         self.filename = None
         self.document = DocumentModel()
         self.clipboard = QtGui.QClipboard()
+        self.undo_stack = QtGui.QUndoStack(self)
 
         # Connect events.
         self.ui.group.toggled.connect(self._toggle_details_group)
@@ -63,6 +66,11 @@ class TabWidget(QtWidgets.QWidget):
             self.contentChanged.emit()
         self.ui.lists.contentChanged.connect(item_changed)
         self.ui.lists.itemSelected.connect(lambda item: self.itemSelected.emit(item))
+
+        self.undo_stack.undoTextChanged.connect(lambda text: self.undoTextChanged.emit(text))
+        self.undo_stack.redoTextChanged.connect(lambda text: self.redoTextChanged.emit(text))
+        self.ui.lists.command.connect(lambda command: self.undo_stack.push(command))
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -190,6 +198,18 @@ class TabWidget(QtWidgets.QWidget):
 
         # It they said discard then return True indicating the software should proceed anyways.
         return True
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def undo(self):
+        self.undo_stack.undo()
+        self.contentChanged.emit()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def redo(self):
+        self.undo_stack.redo()
+        self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------

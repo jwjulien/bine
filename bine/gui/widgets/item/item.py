@@ -26,6 +26,8 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from bine.gui.base.item import Ui_ChecklistItemWidget
 from bine.model.item import ItemModel
+from bine.libraries.undo.item import TextChange, CheckChange
+from bine.libraries.block import Block
 
 
 
@@ -37,6 +39,7 @@ class ChecklistItemWidget(QtWidgets.QWidget):
     """A widget that represents a single checklist item."""
 
     contentChanged = QtCore.Signal(ItemModel)
+    command = QtCore.Signal(QtGui.QUndoCommand)
 
     def __init__(self, parent: QtWidgets.QWidget, item: ItemModel):
         super().__init__(parent)
@@ -44,7 +47,7 @@ class ChecklistItemWidget(QtWidgets.QWidget):
         self.ui.setupUi(self)
 
         self._item = item
-        self._updating = False
+        self._block = Block()
         self.update()
 
         self.ui.checkbox.stateChanged.connect(self._checked)
@@ -61,9 +64,25 @@ class ChecklistItemWidget(QtWidgets.QWidget):
 
 # ----------------------------------------------------------------------------------------------------------------------
     def _checked(self, state: QtCore.Qt.CheckState) -> None:
-        if not self._updating:
-            self._item.checked = state == QtCore.Qt.Checked
-            self.contentChanged.emit(self._item)
+        if self._block.unlocked:
+            checked = state == QtCore.Qt.Checked
+            self.command.emit(CheckChange(self, checked))
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def setChecked(self, checked: bool) -> None:
+        with self._block:
+            self._item.checked = checked
+        self.update()
+        self.contentChanged.emit(self._item)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def setText(self, text: str) -> None:
+        with self._block:
+            self._item.text = text
+        self.update()
+        self.contentChanged.emit(self._item)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -75,13 +94,12 @@ class ChecklistItemWidget(QtWidgets.QWidget):
 # ----------------------------------------------------------------------------------------------------------------------
     def update(self) -> None:
         """Update the GUI from the associated item."""
-        self._updating = True
-        self.ui.checkbox.setCheckState(QtCore.Qt.Checked if self._item.checked else QtCore.Qt.Unchecked)
-        self.ui.viewer.setText(self._item.text)
-        self.ui.children.setVisible(bool(self._item.children))
-        self.ui.progress.setValue(self._item.progress)
-        self.ui.count.setText(str(len(self._item.children)))
-        self._updating = False
+        with self._block:
+            self.ui.checkbox.setCheckState(QtCore.Qt.Checked if self._item.checked else QtCore.Qt.Unchecked)
+            self.ui.viewer.setText(self._item.text)
+            self.ui.children.setVisible(bool(self._item.children))
+            self.ui.progress.setValue(self._item.progress)
+            self.ui.count.setText(str(len(self._item.children)))
 
         self.ui.stack.setCurrentWidget(self.ui.view_mode)
 
@@ -98,15 +116,14 @@ class ChecklistItemWidget(QtWidgets.QWidget):
 # ----------------------------------------------------------------------------------------------------------------------
     def save(self) -> None:
         """Switch to view mode and store the state of the editor back to the item and the viewer."""
-        self._item.text = self.ui.editor.text()
-        self.contentChanged.emit(self._item)
-        self.update()
+        text = self.ui.editor.text()
+        if text != self._item.text:
+            self.command.emit(TextChange(self, text))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def revert(self) -> None:
         """Exit edit mode but revert the changes from the editor."""
-        self.ui.editor.setText(self._item.text)
         self.update()
 
 

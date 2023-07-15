@@ -77,8 +77,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionPreview.triggered.connect(lambda: self.ui.tabs.currentWidget().preview())
         self.ui.actionCloseTab.triggered.connect(lambda: self.close_tab(self.ui.tabs.currentIndex()))
         self.ui.actionExit.triggered.connect(self.close)
-        # self.ui.actionUndo.triggered.connect(lambda: self.ui.tabs.currentWidget().undo())
-        # self.ui.actionRedo.triggered.connect(lambda: self.ui.tabs.currentWidget().redo())
+        self.ui.actionUndo.triggered.connect(lambda: self.ui.tabs.currentWidget().undo())
+        self.ui.actionRedo.triggered.connect(lambda: self.ui.tabs.currentWidget().redo())
         self.ui.actionCut.triggered.connect(lambda: self.ui.tabs.currentWidget().cut())
         self.ui.actionCopy.triggered.connect(lambda: self.ui.tabs.currentWidget().copy())
         self.ui.actionPaste.triggered.connect(lambda: self.ui.tabs.currentWidget().paste())
@@ -270,8 +270,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         tab.itemSelected.connect(selection_changed)
         tab.contentChanged.connect(content_changed)
-        # tab.undoTextChanged.connect(lambda text: self.ui.actionUndo.setStatusTip('Undo ' + text))
-        # tab.redoTextChanged.connect(lambda text: self.ui.actionRedo.setStatusTip('Redo ' + text))
+        tab.undoTextChanged.connect(lambda text: self.ui.actionUndo.setStatusTip('Undo ' + text))
+        tab.redoTextChanged.connect(lambda text: self.ui.actionRedo.setStatusTip('Redo ' + text))
 
         return tab
 

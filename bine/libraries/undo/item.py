@@ -30,45 +30,49 @@ from bine.model.item import ItemModel
 
 
 # ======================================================================================================================
-# Edit Item Undo Class
+# Item Text Command
 # ----------------------------------------------------------------------------------------------------------------------
-class CommandItemEdit(QtGui.QUndoCommand):
-    """Supports undoing a change in a tree editor for individual items."""
-    def __init__(self,
-                 widget: QtWidgets.QTreeWidget,
-                 node: QtWidgets.QTreeWidgetItem,
-                 item: ItemModel,
-                 description: str,
-                 column: int = 0):
-        super().__init__(description)
-        self._widget: QtWidgets.QTreeWidget = widget
-        self._node: QtWidgets.QTreeWidgetItem = node
-        self._column: int = column
-        self._item: ItemModel = item,
-        self._text_before: str = item.text
-        self._checked_before: QtCore.Qt.CheckState  = QtCore.Qt.Checked if item.checked else QtCore.Qt.Unchecked
-        self._text_after: str = node.text(column)
-        self._checked_after: QtCore.Qt.CheckState = node.checkState(column)
+class TextChange(QtGui.QUndoCommand):
+    """Supports undo/redo for a single item text."""
+    def __init__(self, widget: QtWidgets.QWidget, text: str):
+        super().__init__(f'change "{widget.item().text}" to "{text}"')
+        self._widget = widget
+        self._before = widget.item().text
+        self._after = text
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def redo(self):
-        self._widget.blockSignals(True)
-        self._node.setText(self._column, self._text_after)
-        self._node.setCheckState(self._column, self._checked_after)
-        self._widget.blockSignals(False)
-        self._item[0].text = self._text_after
-        self._item[0].checked = self._checked_after
+        self._widget.setText(self._after)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
     def undo(self):
-        self._widget.blockSignals(True)
-        self._node.setText(self._column, self._text_before)
-        self._node.setCheckState(self._column, self._checked_before)
-        self._widget.blockSignals(False)
-        self._item[0].text = self._text_before
-        self._item[0].checked = self._checked_before
+        self._widget.setText(self._before)
+
+
+
+
+# ======================================================================================================================
+# Item Check State Command
+# ----------------------------------------------------------------------------------------------------------------------
+class CheckChange(QtGui.QUndoCommand):
+    """Supports undo/redo for a single item checkbox state."""
+    def __init__(self, widget: QtWidgets.QWidget, checked: bool):
+        super().__init__(f"{'' if checked else 'un'}check \"{widget.item().text}\"")
+        self._widget = widget
+        self._before = widget.item().checked
+        self._after = checked
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def redo(self):
+        self._widget.setChecked(self._after)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def undo(self):
+        self._widget.setChecked(self._before)
 
 
 

@@ -39,6 +39,7 @@ class ChecklistWidget(QtWidgets.QWidget):
 
     contentChanged = QtCore.Signal()
     itemSelected = QtCore.Signal(ItemModel)
+    command = QtCore.Signal(QtGui.QUndoCommand)
 
     def __init__(self, parent: QtWidgets.QWidget, parent_widget: 'ChecklistWidget' = None):
         super().__init__(parent)
@@ -212,11 +213,13 @@ class ChecklistWidget(QtWidgets.QWidget):
         list_item.setData(QtCore.Qt.UserRole, item_widget)
         self.ui.items.setItemWidget(list_item, item_widget)
         item_widget.contentChanged.connect(lambda: self.contentChanged.emit())
+        item_widget.command.connect(lambda command: self.command.emit(command))
 
         # Recursively add children items to the children stack.
         list_widget = ChecklistWidget(self.ui.children, self)
         list_widget.set_item_model(item)
         list_widget.contentChanged.connect(lambda: self.contentChanged.emit())
+        list_widget.command.connect(lambda command: self.command.emit(command))
         self.ui.children.addWidget(list_widget)
 
         size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)

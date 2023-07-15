@@ -20,4 +20,3 @@ Ideas/Requirements
     - Would be kinda nice if the checkboxes support tri-state.
 - Show progress bars showing percentage complete.
 - Automatically sort list items in alphabetical order to better compare two lists.
-- 
