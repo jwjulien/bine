@@ -123,6 +123,7 @@ class ChecklistItemWidget(QtWidgets.QWidget):
         text = self.ui.editor.text()
         if text != self._item.text:
             self.command.emit(TextChange(self, text))
+        self.ui.stack.setCurrentWidget(self.ui.view_mode)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
