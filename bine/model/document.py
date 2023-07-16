@@ -28,7 +28,6 @@ from typing import List
 import markdown
 
 from bine.model.item import ItemModel
-from bine.settings import Settings
 
 
 
@@ -116,14 +115,14 @@ class DocumentModel:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def dump(self, filename: str, settings: Settings, update_cache: bool) -> None:
+    def dump(self, filename: str, update_cache: bool) -> None:
         """Write the contents of this model to the provided filename.
 
         Arguments:
             filename: The path and name of the file to which the contents of this Document are to be dumped.
             headings: The format to use for the headings in the output file.
         """
-        document = self.dumps(settings)
+        document = self.dumps()
         with open(filename, 'w', encoding='utf-8') as handle:
             handle.write(document)
         if update_cache:
@@ -131,7 +130,7 @@ class DocumentModel:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def dumps(self, settings: Settings) -> str:
+    def dumps(self) -> str:
         """Return the contents of this document as a sting."""
         text = self.title + '\n'
         text += ('=' * 120) + '\n'
@@ -144,14 +143,14 @@ class DocumentModel:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def dirty(self, settings: Settings) -> bool:
-        current = self.dumps(settings)
+    def dirty(self) -> bool:
+        current = self.dumps()
         return current != self._cached
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def to_html(self, settings: Settings) -> str:
-        text = self.dumps(settings)
+    def to_html(self) -> str:
+        text = self.dumps()
         extensions = [
             'admonition',
             'codehilite',

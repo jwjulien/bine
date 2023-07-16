@@ -28,6 +28,7 @@ from bine.gui.base.item import Ui_ChecklistItemWidget
 from bine.model.item import ItemModel
 from bine.libraries.undo.item import TextChange, CheckChange
 from bine.libraries.block import Block
+from bine.settings import settings
 
 
 
@@ -100,6 +101,9 @@ class ChecklistItemWidget(QtWidgets.QWidget):
             self.ui.children.setVisible(bool(self._item.children))
             self.ui.progress.setValue(self._item.progress)
             self.ui.count.setText(str(len(self._item.children)))
+
+        style = 'QLabel { color: red; }' if settings.highlight_duplicates and self._item.duplicate else ''
+        self.ui.viewer.setStyleSheet(style)
 
         self.ui.stack.setCurrentWidget(self.ui.view_mode)
 

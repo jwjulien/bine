@@ -49,7 +49,6 @@ class TabWidget(QtWidgets.QWidget):
         self.ui = Ui_Tab()
         self.ui.setupUi(self)
 
-        self.settings = parent.settings
         self.filename = None
         self.document = DocumentModel()
         self.clipboard = QtGui.QClipboard()
@@ -133,7 +132,7 @@ class TabWidget(QtWidgets.QWidget):
             # filename now.
             return self.save_as()
 
-        self.document.dump(self.filename, settings=self.settings, update_cache=True)
+        self.document.dump(self.filename, update_cache=True)
         self.contentChanged.emit()
         return True
 
@@ -171,7 +170,7 @@ class TabWidget(QtWidgets.QWidget):
         """Save a copy of the current document and continue editing under the existing filename."""
         filename = self._save_dialog()
         if filename:
-            self.document.dump(filename, self.settings, update_cache=False)
+            self.document.dump(filename, update_cache=False)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -183,7 +182,7 @@ class TabWidget(QtWidgets.QWidget):
             has cancelled and the caller should cease what it was doing.
         """
         # No unsaved changes, nothing to warn about.
-        if not self.document.dirty(self.settings):
+        if not self.document.dirty():
             return True
 
         # Changes exist, lets prompt the user for an action.
@@ -198,6 +197,11 @@ class TabWidget(QtWidgets.QWidget):
 
         # It they said discard then return True indicating the software should proceed anyways.
         return True
+    
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def refresh(self):
+        self.ui.lists.update()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -304,7 +308,7 @@ class TabWidget(QtWidgets.QWidget):
     def preview(self) -> None:
         """Preview the HTML before printing."""
         browser = QtWidgets.QTextEdit()
-        browser.setHtml(self.document.to_html(self.settings))
+        browser.setHtml(self.document.to_html())
         dialog = QtPrintSupport.QPrintPreviewDialog()
         dialog.paintRequested.connect(browser.print_)
         dialog.exec()
@@ -326,7 +330,7 @@ class TabWidget(QtWidgets.QWidget):
             def script(filename):
                 with open(os.path.join(assets, 'js', filename), 'r', encoding='utf-8') as handle:
                     return f'<script types="text/javascript">{handle.read()}</script>'
-            document = self.document.to_html(self.settings)
+            document = self.document.to_html()
             html = f"""<html>
     <head>
         {style('main.min.css')}

@@ -202,7 +202,9 @@
     <property name="title">
      <string>Settings</string>
     </property>
-    <addaction name="actionTristate"/>
+    <addaction name="actionHighlightDuplicates"/>
+    <addaction name="actionAutoSort"/>
+    <addaction name="actionAutoCheck"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -456,6 +458,50 @@
    </property>
    <property name="shortcut">
     <string>F2</string>
+   </property>
+  </action>
+  <action name="actionHighlightDuplicates">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Highlight Duplicates</string>
+   </property>
+   <property name="statusTip">
+    <string>Highlight items when items with the same text appear elsewhere in the document.</string>
+   </property>
+  </action>
+  <action name="actionAutoCheck">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Auto-check</string>
+   </property>
+   <property name="statusTip">
+    <string>Tie children check state to parent.</string>
+   </property>
+  </action>
+  <action name="actionAutoSort">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Auto-sort</string>
+   </property>
+   <property name="statusTip">
+    <string>Keep lists sorted in alphabetical order as items are added and changed.</string>
+   </property>
+  </action>
+  <action name="actionCheckChildren">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Mark children checked</string>
+   </property>
+   <property name="statusTip">
+    <string>Cascade checks on parents to all children.</string>
    </property>
   </action>
  </widget>

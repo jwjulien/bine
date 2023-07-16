@@ -24,6 +24,8 @@
 # ----------------------------------------------------------------------------------------------------------------------
 from typing import List
 
+from bine.settings import settings
+
 
 
 
@@ -49,20 +51,35 @@ class ItemModel:
 # ----------------------------------------------------------------------------------------------------------------------
     @property
     def checked(self) -> bool:
-        if not self.children:
+        if not self.children or not settings.auto_check:
             return self._checked
-        # TODO: Can this be an option?  It's handy for some applications but there are circumstances when the parent
-        # is better left unchecked until it is packed.  Like a duffel bag might be full, but not checked until loaded
-        # into the car.
         return all([child.checked for child in self.children])
 
     @checked.setter
     def checked(self, value: bool):
+        self._checked = value
         if self.children:
             for child in self.children:
                 child.checked = value
-        else:
-            self._checked = value
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    @property
+    def root(self):
+        if self.parent is None:
+            return self
+        return self.parent.root
+
+
+    @property
+    def duplicate(self) -> bool:
+        def items(list) -> List[str]:
+            texts = []
+            for child in list.children:
+                texts.append(child.text)
+                texts.extend(items(child))
+            return texts
+        return items(self.root).count(self.text) > 1
 
 
 # ----------------------------------------------------------------------------------------------------------------------

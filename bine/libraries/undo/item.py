@@ -80,14 +80,13 @@ class CheckChange(QtGui.QUndoCommand):
 # ======================================================================================================================
 # Delete Item Undo Class
 # ----------------------------------------------------------------------------------------------------------------------
-class CommandItemDelete(QtGui.QUndoCommand):
-    """Supports undoing the removal of an item from the tree."""
+class Delete(QtGui.QUndoCommand):
+    """Supports deleting an item from a list."""
     def __init__(self,
                  widget: QtWidgets.QTreeWidget,
                  node: QtWidgets.QTreeWidgetItem):
         item = node.data(0, QtCore.Qt.UserRole)
-        description = f'delete "{item.text}"'
-        super().__init__(description)
+        super().__init__(f'delete "{item.text}"')
         self._widget: QtWidgets.QTreeWidget = widget
         self._node: QtWidgets.QTreeWidgetItem = node
         self._parent: QtWidgets.QTreeWidgetItem = node.parent()

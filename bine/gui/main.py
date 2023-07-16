@@ -33,7 +33,7 @@ from PySide6 import QtGui, QtWidgets
 from bine.gui.base.main import Ui_MainWindow
 from bine.gui.tab import TabWidget
 from bine.model.item import ItemModel
-from bine.settings import Settings
+from bine.settings import settings
 
 
 
@@ -64,8 +64,7 @@ class MainWindow(QtWidgets.QMainWindow):
         myappid = f'exsystems.{name}.editor.{version}'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
-        # TODO: Persist these settings to a user's config file.
-        self.settings = Settings(tristate=True)
+        # TODO: Load these settings from a user's config file.
         self._show_settings()
 
         self.ui.actionNew.triggered.connect(self.new)
@@ -92,7 +91,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionCheckAll.triggered.connect(lambda: self.ui.tabs.currentWidget().check_all())
         self.ui.actionUncheckAll.triggered.connect(lambda: self.ui.tabs.currentWidget().uncheck_all())
         self.ui.actionToggleSelected.triggered.connect(lambda: self.ui.tabs.currentWidget().toggle())
-        self.ui.actionTristate.triggered.connect(self.tristate)
+        self.ui.actionHighlightDuplicates.triggered.connect(self._settings_changed)
+        self.ui.actionAutoCheck.triggered.connect(self._settings_changed)
+        self.ui.actionAutoSort.triggered.connect(self._settings_changed)
         self.ui.actionExportHtmlWhite.triggered.connect(lambda: self.ui.tabs.currentWidget().export_html('white'))
         self.ui.actionExportHtmlSlate.triggered.connect(lambda: self.ui.tabs.currentWidget().export_html('slate'))
         self.ui.actionAbout.triggered.connect(self.about)
@@ -116,6 +117,7 @@ class MainWindow(QtWidgets.QMainWindow):
         close event will be cancelled - leaving the main window open.
         """
         if self.warn_all():
+            # TODO: Save the settings to user's config file.
             event.accept()
         else:
             event.ignore()
@@ -190,7 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for idx in range(self.ui.tabs.count()):
             self.ui.tabs.setCurrentIndex(idx)
             tab: TabWidget = self.ui.tabs.widget(idx)
-            if tab.document.dirty(self.settings):
+            if tab.document.dirty():
                 if yes_all:
                     # Once the user selected "Yes to All" then we can plow through the remainder and just assume save.
                     result = QtWidgets.QMessageBox.Save
@@ -250,7 +252,7 @@ class MainWindow(QtWidgets.QMainWindow):
             """Connected to the contentChanged event of the new tab to update the tab title when the user changes the
             contents.
             """
-            dirty = '*' if tab.document.dirty(self.settings) else ''
+            dirty = '*' if tab.document.dirty() else ''
             filename = os.path.splitext(os.path.basename(tab.filename))[0] if tab.filename else 'untitled'
             index = self.ui.tabs.indexOf(tab)
             self.ui.tabs.setTabText(index, f'{dirty}{filename}')
@@ -303,14 +305,17 @@ class MainWindow(QtWidgets.QMainWindow):
 # ----------------------------------------------------------------------------------------------------------------------
     def _show_settings(self) -> None:
         """Updates the settings menu to display the current settings."""
-        self.ui.actionTristate.setChecked(self.settings.tristate)
+        self.ui.actionHighlightDuplicates.setChecked(settings.highlight_duplicates)
+        self.ui.actionAutoSort.setChecked(settings.auto_sort)
+        self.ui.actionAutoCheck.setChecked(settings.auto_check)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def tristate(self) -> None:
-        self.settings.tristate = not self.settings.tristate
-        self._show_settings()
-
+    def _settings_changed(self) -> None:
+        settings.highlight_duplicates = self.ui.actionHighlightDuplicates.isChecked()
+        settings.auto_sort = self.ui.actionAutoSort.isChecked()
+        settings.auto_check = self.ui.actionAutoCheck.isChecked()
+        self.ui.tabs.currentWidget().refresh()
 
 
 

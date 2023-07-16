@@ -32,7 +32,20 @@ from dataclasses import dataclass
 # ----------------------------------------------------------------------------------------------------------------------
 @dataclass
 class Settings:
-    tristate: bool
+    highlight_duplicates: bool = True
+    auto_check: bool = True
+    auto_sort: bool = False
+
+    # TODO: Add a load function to load these settings from file.
+    # TODO: Add a save function to store these settings to file.
+
+
+
+
+# ======================================================================================================================
+# Settings Singleton
+# ----------------------------------------------------------------------------------------------------------------------
+settings = Settings()
 
 
 
