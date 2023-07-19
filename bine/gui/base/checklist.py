@@ -31,7 +31,6 @@ class Ui_ChecklistWidget(object):
         self.items.setDragDropMode(QAbstractItemView.InternalMove)
         self.items.setDefaultDropAction(Qt.MoveAction)
         self.items.setAlternatingRowColors(True)
-        self.items.setSortingEnabled(True)
 
         self.horizontalLayout.addWidget(self.items)
 
