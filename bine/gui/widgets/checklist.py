@@ -134,6 +134,7 @@ class ChecklistWidget(QtWidgets.QWidget):
                     return index
             return None
         self._list.children.sort(key=get_index)
+        self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
