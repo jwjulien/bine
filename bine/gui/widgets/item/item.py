@@ -41,6 +41,8 @@ class ChecklistItemWidget(QtWidgets.QWidget):
 
     contentChanged = QtCore.Signal(ItemModel)
     command = QtCore.Signal(QtGui.QUndoCommand)
+    delete = QtCore.Signal(QtWidgets.QWidget)
+    cascade = QtCore.Signal()
 
     def __init__(self, parent: QtWidgets.QWidget, item: ItemModel):
         super().__init__(parent)
@@ -48,14 +50,18 @@ class ChecklistItemWidget(QtWidgets.QWidget):
         self.ui.setupUi(self)
 
         self._item = item
+        self._is_new = not item.text
         self._block = Block()
         self.update()
+
+        self._list_widget_item = None
 
         self.ui.checkbox.stateChanged.connect(self._checked)
         self.ui.stack.setCurrentWidget(self.ui.view_mode)
         self.ui.viewer.doubleClicked.connect(self.edit)
-        self.ui.editor.accept.connect(self.save)
-        self.ui.editor.reject.connect(self.revert)
+        self.ui.editor.returnPressed.connect(self._return_pressed)
+        self.ui.editor.escapePressed.connect(self.revert)
+        self.ui.editor.focusLost.connect(self.save)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -84,6 +90,16 @@ class ChecklistItemWidget(QtWidgets.QWidget):
             self._item.text = text
         self.update()
         self.contentChanged.emit(self._item)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def setListWidgetItem(self, item: QtWidgets.QListWidgetItem) -> None:
+        self._list_widget_item = item
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def listWidgetItem(self) -> None:
+        return self._list_widget_item
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -121,16 +137,28 @@ class ChecklistItemWidget(QtWidgets.QWidget):
     def save(self) -> None:
         """Switch to view mode and store the state of the editor back to the item and the viewer."""
         text = self.ui.editor.text()
-        if text != self._item.text:
+        if not text:
+            self.delete.emit(self)
+        elif text != self._item.text:
             self.command.emit(TextChange(self, text))
         self.ui.stack.setCurrentWidget(self.ui.view_mode)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+    def _return_pressed(self) -> None:
+        self.save()
+        if self._is_new:
+            self.cascade.emit()
+            self._is_new = False
+
+
+# ----------------------------------------------------------------------------------------------------------------------
     def revert(self) -> None:
         """Exit edit mode but revert the changes from the editor."""
-        self.update()
-
+        if not self._item.text:
+            self.delete.emit(self)
+        else:
+            self.update()
 
 
 

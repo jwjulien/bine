@@ -211,10 +211,13 @@ class ChecklistWidget(QtWidgets.QWidget):
         list_item.setData(QtCore.Qt.UserRole, item)
         self.ui.items.addItem(list_item)
         item_widget = ChecklistItemWidget(None, item)
+        item_widget.setListWidgetItem(list_item)
         list_item.setData(QtCore.Qt.UserRole, item_widget)
         self.ui.items.setItemWidget(list_item, item_widget)
         item_widget.contentChanged.connect(lambda: self.contentChanged.emit())
         item_widget.command.connect(lambda command: self.command.emit(command))
+        item_widget.delete.connect(self.delete)
+        item_widget.cascade.connect(self.add)
 
         # Recursively add children items to the children stack.
         list_widget = ChecklistWidget(self.ui.children, self)
@@ -231,12 +234,15 @@ class ChecklistWidget(QtWidgets.QWidget):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def delete(self):
+    def delete(self, widget: ChecklistItemWidget = None):
         """Fires to delete the currently selected item from the list."""
-        selected = self.ui.items.selectedIndexes()
-        if not selected:
-            return
-        row = selected[0].row()
+        if widget is None:
+            selected = self.ui.items.selectedIndexes()
+            if not selected:
+                return
+            row = selected[0].row()
+        else:
+            row = self.ui.items.row(widget.listWidgetItem())
         self.ui.items.takeItem(row)
         self.ui.children.removeWidget(self.ui.children.widget(row))
         self._list.children.pop(row)
