@@ -230,7 +230,7 @@ class TabWidget(QtWidgets.QWidget):
             item = widget.item()
 
             mime_data = QtCore.QMimeData()
-            mime_data.setText(item.dump())
+            mime_data.setText(item.dumps())
             mime_data.setData('application/vnd-bine-item', pickle.dumps(item))
 
             self.clipboard.setMimeData(mime_data)

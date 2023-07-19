@@ -117,12 +117,15 @@ class ItemModel:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-    def dump(self, level: int = 0) -> str:
+    def dumps(self, level: int = 0) -> str:
         indent = ' ' * (level * 4)
-        text = f"{indent}- [{'x' if self.checked else ' '}] {self.text}\n"
+        text = f"{indent}- [{'x' if self.checked else ' '}] {self.text}"
+        if self.children:
+            text += ':'
+        text += '\n'
 
         for child in self.children:
-            text += child.dump(level + 1)
+            text += child.dumps(level + 1)
 
         return text
 

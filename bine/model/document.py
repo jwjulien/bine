@@ -108,6 +108,9 @@ class DocumentModel:
             # With that sorted, the parent for this list will be the one at the end of the parents stack.
             parent = parents[-1]
 
+            # Remove colons and periods from the end of the items.  They look good in Markdown, but not in a GUI.
+            text = text.rstrip(':.')
+
             # Insert the item.
             checked = bool(check_text is not None and check_text != ' ')
             parent.children.append(ItemModel(parent, text, checked))
@@ -138,7 +141,7 @@ class DocumentModel:
             text += self.description
             text += '\n\n'
         for child in self.root.children:
-            text += child.dump()
+            text += child.dumps()
         return text
 
 
