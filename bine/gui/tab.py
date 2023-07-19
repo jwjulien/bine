@@ -65,6 +65,8 @@ class TabWidget(QtWidgets.QWidget):
             self.contentChanged.emit()
         self.ui.lists.contentChanged.connect(item_changed)
         self.ui.lists.itemSelected.connect(lambda item: self.itemSelected.emit(item))
+        self.ui.title.textChanged.connect(self._title_changed)
+        self.ui.description.textChanged.connect(self._description_changed)
 
         self.undo_stack.undoTextChanged.connect(lambda text: self.undoTextChanged.emit(text))
         self.undo_stack.redoTextChanged.connect(lambda text: self.redoTextChanged.emit(text))
@@ -90,6 +92,18 @@ class TabWidget(QtWidgets.QWidget):
     def hide_details(self) -> None:
         self.ui.group.setChecked(False)
         self.ui.group.setFixedHeight(18)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def _title_changed(self) -> None:
+        self.document.title = self.ui.title.text()
+        self.contentChanged.emit()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def _description_changed(self) -> None:
+        self.document.description = self.ui.description.toPlainText()
+        self.contentChanged.emit()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -124,9 +138,6 @@ class TabWidget(QtWidgets.QWidget):
         Returns:
             Boolean True when the document is saved or False if the user cancelled out of the "save as" dialog.
         """
-        self.document.title = self.ui.title.text()
-        self.document.description = self.ui.description.toPlainText()
-
         if not self.filename:
             # If save was selected but this is a new document and filename hasn't been set then we need to pick a
             # filename now.
