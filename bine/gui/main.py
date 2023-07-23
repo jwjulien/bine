@@ -94,6 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionHighlightDuplicates.triggered.connect(self._settings_changed)
         self.ui.actionAutoCheck.triggered.connect(self._settings_changed)
         self.ui.actionAutoSort.triggered.connect(self._settings_changed)
+        self.ui.actionHideChecked.triggered.connect(self._settings_changed)
         self.ui.actionExportHtmlWhite.triggered.connect(lambda: self.ui.tabs.currentWidget().export_html('white'))
         self.ui.actionExportHtmlSlate.triggered.connect(lambda: self.ui.tabs.currentWidget().export_html('slate'))
         self.ui.actionAbout.triggered.connect(self.about)
@@ -308,6 +309,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionHighlightDuplicates.setChecked(settings.highlight_duplicates)
         self.ui.actionAutoSort.setChecked(settings.auto_sort)
         self.ui.actionAutoCheck.setChecked(settings.auto_check)
+        self.ui.actionHideChecked.setChecked(settings.hide_checked)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -315,6 +317,7 @@ class MainWindow(QtWidgets.QMainWindow):
         settings.highlight_duplicates = self.ui.actionHighlightDuplicates.isChecked()
         settings.auto_sort = self.ui.actionAutoSort.isChecked()
         settings.auto_check = self.ui.actionAutoCheck.isChecked()
+        settings.hide_checked = self.ui.actionHideChecked.isChecked()
         self.ui.tabs.currentWidget().refresh()
 
 

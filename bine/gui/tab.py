@@ -208,7 +208,7 @@ class TabWidget(QtWidgets.QWidget):
 
         # It they said discard then return True indicating the software should proceed anyways.
         return True
-    
+
 
 # ----------------------------------------------------------------------------------------------------------------------
     def refresh(self):

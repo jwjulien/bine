@@ -27,6 +27,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from bine.gui.base.checklist import Ui_ChecklistWidget
 from bine.gui.widgets.item.item import ChecklistItemWidget
 from bine.model.item import ItemModel
+from bine.settings import settings
 
 
 
@@ -59,7 +60,7 @@ class ChecklistWidget(QtWidgets.QWidget):
         # self.popmenu_delete.setEnabled(bool(selected))
         self.popmenu.addAction(self.popmenu_delete)
         self.popmenu_insert.triggered.connect(self.add)
-        self.popmenu_delete.triggered.connect(self.delete)
+        self.popmenu_delete.triggered.connect(lambda: self.delete())
 
         self.ui.items.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.items.customContextMenuRequested.connect(lambda p: self.popmenu.exec(self.ui.items.mapToGlobal(p)))
@@ -114,6 +115,7 @@ class ChecklistWidget(QtWidgets.QWidget):
         for idx in range(self.ui.items.count()):
             widget: ChecklistWidget = self.ui.items.item(idx).data(QtCore.Qt.UserRole)
             widget.update()
+            self.ui.items.setRowHidden(idx, settings.hide_checked and widget._item.checked)
 
         for idx in range(self.ui.children.count()):
             widget = self.ui.children.widget(idx)

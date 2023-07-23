@@ -205,6 +205,7 @@
     <addaction name="actionHighlightDuplicates"/>
     <addaction name="actionAutoSort"/>
     <addaction name="actionAutoCheck"/>
+    <addaction name="actionHideChecked"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -502,6 +503,14 @@
    </property>
    <property name="statusTip">
     <string>Cascade checks on parents to all children.</string>
+   </property>
+  </action>
+  <action name="actionHideChecked">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Hide Checked</string>
    </property>
   </action>
  </widget>

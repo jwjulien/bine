@@ -111,6 +111,9 @@ class Ui_MainWindow(object):
         self.actionCheckChildren = QAction(MainWindow)
         self.actionCheckChildren.setObjectName(u"actionCheckChildren")
         self.actionCheckChildren.setCheckable(True)
+        self.actionHideChecked = QAction(MainWindow)
+        self.actionHideChecked.setObjectName(u"actionHideChecked")
+        self.actionHideChecked.setCheckable(True)
         self.main = QWidget(MainWindow)
         self.main.setObjectName(u"main")
         self.verticalLayout_2 = QVBoxLayout(self.main)
@@ -229,6 +232,7 @@ class Ui_MainWindow(object):
         self.menuSettings.addAction(self.actionHighlightDuplicates)
         self.menuSettings.addAction(self.actionAutoSort)
         self.menuSettings.addAction(self.actionAutoCheck)
+        self.menuSettings.addAction(self.actionHideChecked)
 
         self.retranslateUi(MainWindow)
 
@@ -348,6 +352,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(statustip)
         self.actionCheckChildren.setStatusTip(QCoreApplication.translate("MainWindow", u"Cascade checks on parents to all children.", None))
 #endif // QT_CONFIG(statustip)
+        self.actionHideChecked.setText(QCoreApplication.translate("MainWindow", u"Hide Checked", None))
         self.placeholder.setText(QCoreApplication.translate("MainWindow", u"To get started, create a new tab or open a document.", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"Help", None))
